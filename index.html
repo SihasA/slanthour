@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slant Hour — Creative Portfolios</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   RESET & BASE
+───────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #f7f5f2;
+  --ink: #1c1a18;
+  --mid: #8a8680;
+  --rule: #e0ddd8;
+  --accent: #bfb09a;
+  --white: #ffffff;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─────────────────────────────────────────
+   HEADER
+───────────────────────────────────────── */
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 48px;
+  background: rgba(247,245,242,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s ease;
+}
+header.scrolled { border-bottom-color: var(--rule); }
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+nav {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+nav a {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mid);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+nav a:hover { color: var(--ink); }
+
+/* ─────────────────────────────────────────
+   HERO
+───────────────────────────────────────── */
+.hero {
+  padding: 180px 48px 100px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.hero-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.hero-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(52px, 8vw, 90px);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 40px;
+}
+.hero-title em {
+  font-style: italic;
+  color: var(--mid);
+}
+.hero-body {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  color: var(--mid);
+  max-width: 500px;
+  line-height: 1.7;
+  margin-bottom: 48px;
+}
+.hero-rule {
+  width: 1px;
+  height: 48px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+/* ─────────────────────────────────────────
+   SECTION LABELS
+───────────────────────────────────────── */
+.section-header {
+  max-width: 1100px;
+  margin: 0 auto 48px;
+  padding: 0 48px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.section-label {
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────
+   PORTFOLIO GRID
+───────────────────────────────────────── */
+.portfolios {
+  max-width: 1100px;
+  margin: 80px auto 140px;
+  padding: 0 48px;
+}
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+/* ── Card ── */
+.card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  group: true;
+}
+.card-image {
+  width: 100%;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+  background: var(--rule);
+  margin-bottom: 20px;
+  position: relative;
+}
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.4s ease;
+  filter: grayscale(20%);
+}
+.card:hover .card-image img {
+  transform: scale(1.03);
+  filter: grayscale(0%);
+}
+.card-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(28,26,24,0);
+  transition: background 0.3s ease;
+  display: flex;
+  align-items: flex-end;
+  padding: 20px;
+}
+.card:hover .card-image-overlay {
+  background: rgba(28,26,24,0.08);
+}
+.card-arrow {
+  font-size: 20px;
+  color: #fff;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.card:hover .card-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+.card-discipline {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.card-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--ink);
+  margin-bottom: 10px;
+  transition: color 0.2s ease;
+}
+.card:hover .card-name { color: var(--mid); }
+.card-bio {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--mid);
+  line-height: 1.6;
+}
+
+/* ── Placeholder card (add yourself) ── */
+.card-placeholder .card-image {
+  border: 1px dashed var(--rule);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-placeholder-inner {
+  text-align: center;
+}
+.card-placeholder-icon {
+  font-size: 28px;
+  color: var(--rule);
+  margin-bottom: 12px;
+  display: block;
+}
+.card-placeholder-text {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ─────────────────────────────────────────
+   ABOUT / PITCH SECTION
+───────────────────────────────────────── */
+.pitch-section {
+  border-top: 1px solid var(--rule);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 100px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+  id: about;
+}
+.pitch-label {
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+.pitch-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+.pitch-body {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--mid);
+  margin-bottom: 40px;
+}
+.pitch-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 4px;
+  transition: gap 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.pitch-cta:hover {
+  gap: 20px;
+  color: var(--mid);
+  border-color: var(--mid);
+}
+
+/* ─────────────────────────────────────────
+   CONTACT SECTION
+───────────────────────────────────────── */
+.contact-section {
+  border-top: 1px solid var(--rule);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 100px 48px 120px;
+}
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+.contact-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.contact-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-style: italic;
+  color: var(--mid);
+  line-height: 1.7;
+}
+.contact-links {
+  display: flex;
+  flex-direction: column;
+}
+.contact-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 20px 0;
+  border-top: 1px solid var(--rule);
+  transition: gap 0.2s ease;
+}
+.contact-link:last-child { border-bottom: 1px solid var(--rule); }
+.contact-link:hover { gap: 24px; }
+.contact-link-label {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--mid);
+  min-width: 80px;
+}
+.contact-link-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-style: italic;
+}
+.contact-link-arrow {
+  margin-left: auto;
+  font-size: 16px;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+}
+.contact-link:hover .contact-link-arrow { transform: translateX(4px); }
+
+/* ─────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--rule);
+  padding: 28px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--mid);
+}
+.footer-copy {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+
+/* ─────────────────────────────────────────
+   ANIMATIONS
+───────────────────────────────────────── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .portfolio-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  header { padding: 20px 24px; }
+  nav { gap: 20px; }
+  .hero { padding: 130px 24px 80px; }
+  .portfolios { padding: 0 24px; margin-bottom: 100px; }
+  .portfolio-grid { grid-template-columns: 1fr; gap: 48px; }
+  .section-header { padding: 0 24px; }
+  .pitch-section,
+  .contact-grid { grid-template-columns: 1fr; gap: 48px; }
+  .pitch-section { padding: 60px 24px; }
+  .contact-section { padding: 60px 24px 80px; }
+  footer { padding: 24px; flex-direction: column; gap: 12px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="site-header">
+  <a href="/" class="logo">Slant Hour</a>
+  <nav>
+    <a href="#portfolios">Work</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero fade-up">
+  <p class="hero-eyebrow">Photography &middot; Film &middot; Design &middot; Writing</p>
+  <h1 class="hero-title">A place for<br><em>serious work.</em></h1>
+  <p class="hero-body">
+    Slant Hour is a platform for independent creatives to showcase their portfolios — curated, unhurried, and built to last.
+  </p>
+  <div class="hero-rule"></div>
+</section>
+
+<!-- PORTFOLIOS -->
+<div class="section-header fade-up" id="portfolios">
+  <span class="section-label">Portfolios</span>
+</div>
+<section class="portfolios">
+  <div class="portfolio-grid">
+
+    <!-- ── SIHAS ── -->
+    <!-- Replace assets/sihas-cover.jpg with a representative photo -->
+    <a href="/sihas-abeywickrama" class="card fade-up">
+      <div class="card-image">
+        <img src="assets/sihas-cover.jpg" alt="Sihas Abeywickrama photography">
+        <div class="card-image-overlay">
+          <span class="card-arrow">&rarr;</span>
+        </div>
+      </div>
+      <p class="card-discipline">Documentary Photography</p>
+      <h2 class="card-name">Sihas Abeywickrama</h2>
+      <p class="card-bio">Street and architecture work shot across London and Bath. Available light, no plan.</p>
+    </a>
+
+    <!-- ── PLACEHOLDER SLOT 2 ── -->
+    <div class="card card-placeholder fade-up">
+      <div class="card-image">
+        <div class="card-placeholder-inner">
+          <span class="card-placeholder-icon">+</span>
+          <span class="card-placeholder-text">Your portfolio</span>
+        </div>
+      </div>
+      <p class="card-discipline">&nbsp;</p>
+      <h2 class="card-name" style="color: var(--rule);">Coming soon</h2>
+      <p class="card-bio">&nbsp;</p>
+    </div>
+
+    <!-- ── PLACEHOLDER SLOT 3 ── -->
+    <div class="card card-placeholder fade-up">
+      <div class="card-image">
+        <div class="card-placeholder-inner">
+          <span class="card-placeholder-icon">+</span>
+          <span class="card-placeholder-text">Your portfolio</span>
+        </div>
+      </div>
+      <p class="card-discipline">&nbsp;</p>
+      <h2 class="card-name" style="color: var(--rule);">Coming soon</h2>
+      <p class="card-bio">&nbsp;</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- PITCH / ABOUT -->
+<section class="pitch-section fade-up" id="about">
+  <div>
+    <p class="pitch-label">About Slant Hour</p>
+    <h2 class="pitch-title">Showcase your work, your way.</h2>
+    <p class="pitch-body">
+      Slant Hour is an open platform for photographers, filmmakers, designers, and writers who want a home for their work without the noise of social media. Each portfolio is independent, personal, and built to feel like a book — not a feed.
+    </p>
+    <a href="#contact" class="pitch-cta">Get in touch &rarr;</a>
+  </div>
+  <div>
+    <p class="pitch-label">What we offer</p>
+    <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 8px;">
+      <div>
+        <p style="font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); margin-bottom:6px;">A dedicated page</p>
+        <p style="font-family:'Cormorant Garamond',serif; font-size:16px; color:var(--mid); line-height:1.7; font-style:italic;">Your own sub-page at slanthour.com/your-name, designed to your work.</p>
+      </div>
+      <div style="border-top: 1px solid var(--rule); padding-top: 24px;">
+        <p style="font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); margin-bottom:6px;">Editorial layout</p>
+        <p style="font-family:'Cormorant Garamond',serif; font-size:16px; color:var(--mid); line-height:1.7; font-style:italic;">Album-style grids, lightbox viewing, series labels — built to feel like a photo book.</p>
+      </div>
+      <div style="border-top: 1px solid var(--rule); padding-top: 24px;">
+        <p style="font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); margin-bottom:6px;">No algorithm</p>
+        <p style="font-family:'Cormorant Garamond',serif; font-size:16px; color:var(--mid); line-height:1.7; font-style:italic;">Your work is the page. Nothing else competes for attention.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-section fade-up" id="contact">
+  <div class="contact-grid">
+    <div>
+      <p class="pitch-label">Contact</p>
+      <h2 class="contact-title">Want to be featured?</h2>
+      <p class="contact-sub">
+        Reach out to discuss adding your portfolio to Slant Hour. Open to photographers, filmmakers, designers, and writers.
+      </p>
+    </div>
+    <div class="contact-links">
+      <a href="mailto:hello@slanthour.com" class="contact-link">
+        <span class="contact-link-label">Email</span>
+        <span class="contact-link-value">hello@slanthour.com</span>
+        <span class="contact-link-arrow">&rarr;</span>
+      </a>
+      <a href="https://instagram.com/slanthour" target="_blank" class="contact-link">
+        <span class="contact-link-label">Instagram</span>
+        <span class="contact-link-value">@slanthour</span>
+        <span class="contact-link-arrow">&rarr;</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-name">Slant Hour</span>
+  <span class="footer-copy">&copy; 2025 &middot; All rights reserved</span>
+</footer>
+
+<!-- JAVASCRIPT -->
+<script>
+const header = document.getElementById('site-header');
+window.addEventListener('scroll', () => {
+  header.classList.toggle('scrolled', window.scrollY > 20);
+});
+
+const fadeEls = document.querySelectorAll('.fade-up');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08 });
+fadeEls.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

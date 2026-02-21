@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sihas — Photography</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   RESET & BASE
+───────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #f7f5f2;
+  --ink: #1c1a18;
+  --mid: #8a8680;
+  --rule: #e0ddd8;
+  --accent: #bfb09a;
+  --white: #ffffff;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─────────────────────────────────────────
+   HEADER / NAV
+───────────────────────────────────────── */
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 48px;
+  background: transparent;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+header.scrolled {
+  background: rgba(247,245,242,0.92);
+  border-bottom-color: var(--rule);
+}
+/* When over banner, header text is white */
+header.over-banner .logo,
+header.over-banner nav a {
+  color: rgba(255,255,255,0.9);
+}
+header.over-banner nav a:hover {
+  color: #fff;
+}
+/* Once scrolled past banner, revert to normal */
+header.scrolled .logo { color: var(--ink); }
+header.scrolled nav a { color: var(--mid); }
+header.scrolled nav a:hover { color: var(--ink); }
+
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+nav {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+nav a {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mid);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+nav a:hover { color: var(--ink); }
+
+/* ─────────────────────────────────────────
+   HERO BANNER (full-width photo)
+───────────────────────────────────────── */
+.hero-banner {
+  position: relative;
+  width: 100%;
+  height: 70vh;
+  min-height: 400px;
+  max-height: 700px;
+  overflow: hidden;
+}
+.hero-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  display: block;
+}
+.hero-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.15) 0%,
+    rgba(0,0,0,0.05) 40%,
+    rgba(0,0,0,0.3) 100%
+  );
+}
+.hero-banner-text {
+  position: absolute;
+  bottom: 48px;
+  left: 48px;
+  right: 48px;
+}
+.hero-banner-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(48px, 8vw, 88px);
+  font-weight: 300;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.hero-banner-title em {
+  font-style: italic;
+  opacity: 0.7;
+}
+.hero-banner-desc {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-style: italic;
+  color: rgba(255,255,255,0.75);
+  max-width: 420px;
+  line-height: 1.7;
+}
+
+/* ─────────────────────────────────────────
+   INTRO (below banner)
+───────────────────────────────────────── */
+.intro {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 64px 48px 48px;
+}
+.intro-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.intro-rule {
+  width: 1px;
+  height: 40px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+/* ─────────────────────────────────────────
+   SERIES LABEL
+───────────────────────────────────────── */
+.series-header {
+  max-width: 1100px;
+  margin: 80px auto 32px;
+  padding: 0 48px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.series-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.series-label {
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--mid);
+  white-space: nowrap;
+}
+.series-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  color: var(--accent);
+  margin-right: -8px;
+}
+
+/* ─────────────────────────────────────────
+   ALBUM LAYOUT SYSTEM
+───────────────────────────────────────── */
+.album {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 48px 120px;
+}
+.spread {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+/* Layout variants */
+.spread-1-2 { grid-template-columns: 1.4fr 1fr 1fr; }
+.spread-hero { grid-template-columns: 1fr; }
+.spread-2-1 { grid-template-columns: 1fr 1fr 1.3fr; }
+.spread-land-port { grid-template-columns: 1.6fr 1fr; }
+.spread-3-equal { grid-template-columns: 1fr 1fr 1fr; }
+.spread-2-equal { grid-template-columns: 1fr 1fr; }
+/* Span helpers */
+.span-2 { grid-column: span 2; }
+.span-full { grid-column: 1 / -1; }
+
+/* ─────────────────────────────────────────
+   PHOTO CARD
+───────────────────────────────────────── */
+.photo {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--rule);
+}
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.4s ease;
+  filter: brightness(1);
+}
+.photo:hover img {
+  transform: scale(1.025);
+  filter: brightness(0.96);
+}
+/* Aspect ratios */
+.photo.portrait { aspect-ratio: 3/4; }
+.photo.landscape { aspect-ratio: 4/3; }
+.photo.square { aspect-ratio: 1/1; }
+.photo.tall { aspect-ratio: 2/3; }
+.photo.wide { aspect-ratio: 16/9; }
+.photo.hero-img { aspect-ratio: 16/7; }
+/* Hover overlay */
+.photo-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 20px 16px 16px;
+  background: linear-gradient(transparent, rgba(28,26,24,0.5));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.photo:hover .photo-overlay { opacity: 1; }
+.photo-caption {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(247,245,242,0.85);
+}
+
+/* ─────────────────────────────────────────
+   LIGHTBOX
+───────────────────────────────────────── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(247,245,242,0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.lightbox.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.lightbox-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 48px;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 8px 60px rgba(28,26,24,0.12);
+  transform: scale(0.97);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.lightbox.active .lightbox-img { transform: scale(1); }
+.lightbox-close {
+  position: absolute;
+  top: 28px; right: 48px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mid);
+  padding: 8px;
+  transition: color 0.2s ease;
+}
+.lightbox-close:hover { color: var(--ink); }
+.lightbox-nav {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.lightbox-nav button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mid);
+  padding: 8px 12px;
+  transition: color 0.2s ease;
+}
+.lightbox-nav button:hover { color: var(--ink); }
+.lightbox-counter {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  min-width: 50px;
+  text-align: center;
+}
+.lightbox-caption-text {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────
+   ABOUT / CONTACT SECTION
+───────────────────────────────────────── */
+.about-section {
+  border-top: 1px solid var(--rule);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 80px 48px 120px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+.about-label {
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+.about-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+.about-body {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--mid);
+}
+.contact-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 32px;
+}
+.contact-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  color: var(--ink);
+  transition: gap 0.2s ease;
+  padding: 16px 0;
+  border-top: 1px solid var(--rule);
+}
+.contact-link:hover { gap: 24px; }
+.contact-link-label {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--mid);
+  min-width: 80px;
+}
+.contact-link-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-style: italic;
+}
+.contact-link-arrow {
+  margin-left: auto;
+  font-size: 16px;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+}
+.contact-link:hover .contact-link-arrow { transform: translateX(4px); }
+
+/* ─────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--rule);
+  padding: 28px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--mid);
+}
+.footer-copy {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+
+/* ─────────────────────────────────────────
+   ANIMATIONS
+───────────────────────────────────────── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+@media (max-width: 768px) {
+  header { padding: 20px 24px; }
+  .hero-banner { height: 50vh; min-height: 300px; }
+  .hero-banner-text { bottom: 32px; left: 24px; right: 24px; }
+  .hero-banner-title { font-size: clamp(36px, 10vw, 56px); }
+  .intro { padding: 48px 24px 32px; }
+  .album { padding: 0 24px 80px; }
+  .series-header { padding: 0 24px; }
+  .spread-1-2,
+  .spread-2-1,
+  .spread-land-port,
+  .spread-3-equal {
+    grid-template-columns: 1fr 1fr;
+  }
+  .spread-hero { grid-template-columns: 1fr; }
+  .about-section {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    padding: 60px 24px 80px;
+  }
+  footer { padding: 24px; flex-direction: column; gap: 12px; text-align: center; }
+  nav { gap: 20px; }
+  .lightbox-close { right: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="site-header">
+  <a href="#" class="logo">Sihas</a>
+  <nav>
+    <a href="#work">Work</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<!-- HERO BANNER (your B&W photo goes here) -->
+<div class="hero-banner">
+  <!-- Replace banner.jpg with your actual banner photo filename -->
+  <img src="images/banner/banner.jpg" alt="Banner photograph">
+  <div class="hero-banner-overlay"></div>
+  <div class="hero-banner-text">
+    <h1 class="hero-banner-title">Between<br><em>Stones</em></h1>
+    <p class="hero-banner-desc">
+      Photographs made while passing through — rain-slicked streets,
+      Georgian alleys, brutalist riverbanks.
+    </p>
+  </div>
+</div>
+
+<!-- INTRO -->
+<section class="intro fade-up">
+  <p class="intro-eyebrow">Documentary · Street · Architecture</p>
+  <div class="intro-rule"></div>
+</section>
+
+<!-- ─── SERIES I: RAIN & CITY ─── -->
+<div class="series-header fade-up" id="work">
+  <span class="series-num">01</span>
+  <span class="series-label">Rain &amp; City — London</span>
+</div>
+<div class="album">
+  <!--
+    PLACEHOLDER SPREADS — replace filenames with your actual photos.
+
+    How the layout classes work:
+      spread-hero       = 1 full-width image
+      spread-2-equal    = 2 images side by side (good for portrait pairs)
+      spread-land-port  = 1 wide + 1 narrow (landscape + portrait)
+      spread-1-2        = 1 large + 2 smaller (3 images)
+      spread-2-1        = 2 smaller + 1 large (3 images)
+      spread-3-equal    = 3 equal columns
+
+    Photo shape classes:
+      portrait   = 3:4 vertical
+      landscape  = 4:3 horizontal
+      hero-img   = 16:7 cinematic wide
+      square     = 1:1
+      wide       = 16:9
+  -->
+  <div class="spread spread-hero fade-up">
+    <div class="photo hero-img" data-src="images/01-rain-city-london/01.jpg" data-caption="Sample caption">
+      <img src="images/01-rain-city-london/01.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+  <div class="spread spread-2-equal fade-up">
+    <div class="photo portrait" data-src="images/01-rain-city-london/02.jpg" data-caption="Sample caption">
+      <img src="images/01-rain-city-london/02.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+    <div class="photo portrait" data-src="images/01-rain-city-london/03.jpg" data-caption="Sample caption">
+      <img src="images/01-rain-city-london/03.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+  <div class="spread spread-land-port fade-up">
+    <div class="photo landscape" data-src="images/01-rain-city-london/04.jpg" data-caption="Sample caption">
+      <img src="images/01-rain-city-london/04.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+    <div class="photo portrait" data-src="images/01-rain-city-london/05.jpg" data-caption="Sample caption">
+      <img src="images/01-rain-city-london/05.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SERIES II: STONE & LIGHT ─── -->
+<div class="series-header fade-up">
+  <span class="series-num">02</span>
+  <span class="series-label">Stone &amp; Light — Bath</span>
+</div>
+<div class="album">
+  <div class="spread spread-2-equal fade-up">
+    <div class="photo portrait" data-src="images/02-stone-light-bath/01.jpg" data-caption="Sample caption">
+      <img src="images/02-stone-light-bath/01.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+    <div class="photo portrait" data-src="images/02-stone-light-bath/02.jpg" data-caption="Sample caption">
+      <img src="images/02-stone-light-bath/02.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+  <div class="spread spread-land-port fade-up">
+    <div class="photo landscape" data-src="images/02-stone-light-bath/03.jpg" data-caption="Sample caption">
+      <img src="images/02-stone-light-bath/03.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+    <div class="photo portrait" data-src="images/02-stone-light-bath/04.jpg" data-caption="Sample caption">
+      <img src="images/02-stone-light-bath/04.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+  <div class="spread spread-hero fade-up">
+    <div class="photo hero-img" data-src="images/02-stone-light-bath/05.jpg" data-caption="Sample caption">
+      <img src="images/02-stone-light-bath/05.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SERIES III: SOUTHBANK ─── -->
+<div class="series-header fade-up">
+  <span class="series-num">03</span>
+  <span class="series-label">Concrete &amp; River — Southbank</span>
+</div>
+<div class="album">
+  <div class="spread spread-hero fade-up">
+    <div class="photo hero-img" data-src="images/03-concrete-river-southbank/01.jpg" data-caption="Sample caption">
+      <img src="images/03-concrete-river-southbank/01.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+  <div class="spread spread-2-equal fade-up">
+    <div class="photo portrait" data-src="images/03-concrete-river-southbank/02.jpg" data-caption="Sample caption">
+      <img src="images/03-concrete-river-southbank/02.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+    <div class="photo portrait" data-src="images/03-concrete-river-southbank/03.jpg" data-caption="Sample caption">
+      <img src="images/03-concrete-river-southbank/03.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+  <div class="spread spread-3-equal fade-up">
+    <div class="photo landscape" data-src="images/03-concrete-river-southbank/04.jpg" data-caption="Sample caption">
+      <img src="images/03-concrete-river-southbank/04.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+    <div class="photo landscape" data-src="images/03-concrete-river-southbank/05.jpg" data-caption="Sample caption">
+      <img src="images/03-concrete-river-southbank/05.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+    <div class="photo landscape" data-src="images/03-concrete-river-southbank/06.jpg" data-caption="Sample caption">
+      <img src="images/03-concrete-river-southbank/06.jpg" alt="" loading="lazy">
+      <div class="photo-overlay"><span class="photo-caption">Sample caption</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ABOUT & CONTACT ─── -->
+<section class="about-section fade-up" id="about">
+  <div>
+    <p class="about-label">About</p>
+    <h2 class="about-title">Documenting a city before leaving it.</h2>
+    <p class="about-body">
+      These photographs were made across the United Kingdom between 2024 and 2025 —
+      final year wanderings through London, Bath, and the South Bank.
+      Shot with a Sirui 33mm f/1.2, mostly available light,
+      mostly without a plan.
+    </p>
+  </div>
+  <div id="contact">
+    <p class="about-label">Contact</p>
+    <div class="contact-links">
+      <a href="mailto:hello@sihas.co" class="contact-link">
+        <span class="contact-link-label">Email</span>
+        <span class="contact-link-value">hello@sihas.co</span>
+        <span class="contact-link-arrow">&rarr;</span>
+      </a>
+      <a href="https://instagram.com" target="_blank" class="contact-link">
+        <span class="contact-link-label">Instagram</span>
+        <span class="contact-link-value">@sihas</span>
+        <span class="contact-link-arrow">&rarr;</span>
+      </a>
+      <a href="#" class="contact-link">
+        <span class="contact-link-label">Prints</span>
+        <span class="contact-link-value">Available on request</span>
+        <span class="contact-link-arrow">&rarr;</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-name">Sihas</span>
+  <span class="footer-copy">&copy; 2025 &middot; All photographs</span>
+</footer>
+
+<!-- ─── LIGHTBOX ─── -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" id="lb-close">Close &times;</button>
+    <img class="lightbox-img" id="lb-img" src="" alt="">
+    <span class="lightbox-caption-text" id="lb-caption"></span>
+    <div class="lightbox-nav">
+      <button id="lb-prev">&larr; Prev</button>
+      <span class="lightbox-counter" id="lb-counter">1 / 1</span>
+      <button id="lb-next">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── JAVASCRIPT ─── -->
+<script>
+// ── Header: transparent over banner, solid when scrolled ──
+const header = document.getElementById('site-header');
+const banner = document.querySelector('.hero-banner');
+
+function updateHeader() {
+  const scrollY = window.scrollY;
+  const bannerBottom = banner ? banner.offsetHeight : 0;
+
+  if (scrollY > 20) {
+    header.classList.add('scrolled');
+  } else {
+    header.classList.remove('scrolled');
+  }
+
+  if (banner && scrollY < bannerBottom - 80) {
+    header.classList.add('over-banner');
+  } else {
+    header.classList.remove('over-banner');
+  }
+}
+window.addEventListener('scroll', updateHeader);
+updateHeader();
+
+// ── Fade-up on scroll ──
+const fadeEls = document.querySelectorAll('.fade-up');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08 });
+fadeEls.forEach(el => observer.observe(el));
+
+// ── Lightbox ──
+const photos = Array.from(document.querySelectorAll('.photo[data-src]'));
+const lightbox = document.getElementById('lightbox');
+const lbImg = document.getElementById('lb-img');
+const lbCaption = document.getElementById('lb-caption');
+const lbCounter = document.getElementById('lb-counter');
+let current = 0;
+
+function openLightbox(index) {
+  current = index;
+  const p = photos[index];
+  lbImg.src = p.dataset.src;
+  lbImg.alt = p.dataset.caption || '';
+  lbCaption.textContent = p.dataset.caption || '';
+  lbCounter.textContent = `${index + 1} / ${photos.length}`;
+  lightbox.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  lightbox.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(() => { lbImg.src = ''; }, 350);
+}
+
+function navigate(dir) {
+  current = (current + dir + photos.length) % photos.length;
+  lbImg.style.opacity = '0';
+  lbImg.style.transform = 'scale(0.97)';
+  setTimeout(() => {
+    const p = photos[current];
+    lbImg.src = p.dataset.src;
+    lbCaption.textContent = p.dataset.caption || '';
+    lbCounter.textContent = `${current + 1} / ${photos.length}`;
+    lbImg.style.opacity = '1';
+    lbImg.style.transform = 'scale(1)';
+  }, 150);
+}
+
+lbImg.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+photos.forEach((p, i) => p.addEventListener('click', () => openLightbox(i)));
+document.getElementById('lb-close').addEventListener('click', closeLightbox);
+document.getElementById('lb-prev').addEventListener('click', () => navigate(-1));
+document.getElementById('lb-next').addEventListener('click', () => navigate(1));
+lightbox.addEventListener('click', (e) => {
+  if (e.target === lightbox || e.target === lightbox.querySelector('.lightbox-inner')) closeLightbox();
+});
+document.addEventListener('keydown', (e) => {
+  if (!lightbox.classList.contains('active')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+</script>
+</body>
+</html>
