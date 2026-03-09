@@ -166,7 +166,7 @@ nav a:hover { color: var(--ink); }
   object-fit: contain;
   display: block;
   transform: scale(0.98);
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.1s ease;
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
@@ -367,7 +367,7 @@ footer {
 
 <footer>
   <span class="footer-name">Sihas</span>
-  <span class="footer-copy">&copy; 2025 &middot; All photographs</span>
+  <span class="footer-copy">&copy; 2026 &middot; All photographs</span>
 </footer>
 
 <!-- Lightbox -->
@@ -402,6 +402,7 @@ updateHeader();
 // ── Load photos.json ─────────────────────────────────────────
 let photos = [];
 let current = 0;
+let scrollY = 0;
 
 async function loadPhotos() {
   const grid = document.getElementById('photo-grid');
@@ -429,7 +430,7 @@ async function loadPhotos() {
     photos.forEach((src, i) => {
       const item = document.createElement('div');
       item.className = 'grid-item';
-      item.innerHTML = `<img src="${src}" alt="Photograph ${i + 1}" loading="lazy">`;
+      item.innerHTML = `<img src="${src}" alt="Photograph ${i + 1}"${i < 3 ? '' : ' loading="lazy"'}>`;
       item.addEventListener('click', () => openLightbox(i));
       grid.appendChild(item);
     });
@@ -453,11 +454,20 @@ function openLightbox(i) {
   lbCap.textContent = '';
   lbCount.textContent = `${i + 1} / ${photos.length}`;
   lightbox.classList.add('active');
+  scrollY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = '100%';
   document.body.style.overflow = 'hidden';
+  preloadAdjacent(i);
 }
 function closeLightbox() {
   lightbox.classList.remove('active');
+  document.body.style.position = '';
   document.body.style.overflow = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  window.scrollTo(0, scrollY);
   setTimeout(() => { lbImg.src = ''; }, 250);
 }
 function navigate(dir) {
@@ -467,9 +477,15 @@ function navigate(dir) {
     lbImg.src = photos[current];
     lbCount.textContent = `${current + 1} / ${photos.length}`;
     lbImg.style.opacity = '1';
+    preloadAdjacent(current);
   }, 100);
 }
-lbImg.style.transition = 'opacity 0.1s ease';
+function preloadAdjacent(i) {
+  [-1, 1].forEach(d => {
+    const img = new Image();
+    img.src = photos[(i + d + photos.length) % photos.length];
+  });
+}
 
 // Touch: briefly show UI on tap, then hide
 let uiTimeout;
