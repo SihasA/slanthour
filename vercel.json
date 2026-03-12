@@ -1,8 +1,3 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "rewrites": [
-    { "source": "/sihas-abeywickrama", "destination": "/sihas-abeywickrama/index.html" },
-    { "source": "/sihas-abeywickrama/(.*)", "destination": "/sihas-abeywickrama/$1" }
-  ]
+  "framework": "nextjs"
 }

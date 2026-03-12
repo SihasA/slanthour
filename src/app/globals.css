@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base ──────────────────────────────────────────────────── */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Utility classes ───────────────────────────────────────── */
+
+@layer utilities {
+  /* Section label — shared across landing + portfolio pages */
+  .section-label {
+    @apply text-[9px] font-body uppercase tracking-label text-accent;
+  }
+
+  /* Smooth fade-up on scroll */
+  .fade-up {
+    @apply opacity-0 translate-y-5 transition-all duration-700 ease-out;
+  }
+  .fade-up.visible {
+    @apply opacity-100 translate-y-0;
+  }
+}
+
+/* ─── Form focus ring ───────────────────────────────────────── */
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-color, #9c8e7a);
+}
+
+/* ─── Selection colour ──────────────────────────────────────── */
+
+::selection {
+  background: rgba(156, 142, 122, 0.3);
+  color: #e8e4df;
+}
