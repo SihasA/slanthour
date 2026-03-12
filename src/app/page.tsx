@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { WaitlistForm } from "@/components/landing/WaitlistForm";
 
 export default function LandingPage() {
   return (
@@ -17,10 +16,10 @@ export default function LandingPage() {
             How it works
           </a>
           <a
-            href="#request-access"
+            href="#get-started"
             className="text-[10px] uppercase tracking-wide text-muted hover:text-foreground transition-colors"
           >
-            Request access
+            Get started
           </a>
           <Link
             href="/login"
@@ -66,11 +65,11 @@ export default function LandingPage() {
                 01
               </span>
               <h3 className="font-heading text-2xl font-light italic text-foreground mb-3">
-                Request access
+                Sign up
               </h3>
               <p className="font-heading text-[15px] italic text-muted leading-relaxed">
-                Tell us about your work. Slant Hour is invite-only — we keep the
-                bar high so every portfolio feels intentional.
+                Create your free account in seconds. Sign up with Google or
+                email — no invite needed.
               </p>
             </div>
 
@@ -142,22 +141,32 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Request Access ──────────────────────────────────── */}
-      <section id="request-access" className="border-t border-rule">
+      {/* ── Get Started ──────────────────────────────────────── */}
+      <section id="get-started" className="border-t border-rule">
         <div className="max-w-[1100px] mx-auto px-6 md:px-12 py-20 md:py-28 grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-20 items-start">
           <div>
-            <p className="section-label mb-6">Beta</p>
+            <p className="section-label mb-6">Get started</p>
             <h2 className="font-heading text-[clamp(32px,5vw,40px)] font-light italic leading-tight text-foreground mb-4">
-              Request early access.
+              Build your portfolio today.
             </h2>
             <p className="font-heading text-[17px] italic text-muted leading-loose">
-              We&apos;re onboarding photographers in small batches. Tell us a
-              bit about your work and we&apos;ll be in touch when your spot is
-              ready.
+              Sign up for free and have your portfolio live in minutes.
+              No waitlist, no invite codes — just your best work, beautifully
+              presented.
             </p>
           </div>
 
-          <WaitlistForm />
+          <div className="flex flex-col items-start gap-6 md:mt-4">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-3 px-8 py-4 text-[10px] uppercase tracking-wide text-background bg-foreground hover:bg-accent transition-colors duration-200"
+            >
+              Create your portfolio <span className="text-sm">&rarr;</span>
+            </Link>
+            <p className="font-heading text-[13px] italic text-muted/60">
+              Free to use &middot; No credit card required
+            </p>
+          </div>
         </div>
       </section>
 
