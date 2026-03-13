@@ -1,5 +1,7 @@
 // ─── Database row types ───────────────────────────────────────
 
+export type Tier = "free" | "pro" | "studio";
+
 export interface Profile {
   id: string;
   username: string;
@@ -9,6 +11,7 @@ export interface Profile {
   instagram_handle: string | null;
   website_url: string | null;
   avatar_url: string | null;
+  tier: Tier;
   created_at: string;
   updated_at: string;
 }

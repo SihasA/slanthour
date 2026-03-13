@@ -11,27 +11,25 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: portfolio }, { data: photos }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("display_name, username")
-        .eq("id", user.id)
-        .single(),
-      supabase
-        .from("portfolios")
-        .select("*")
-        .eq("user_id", user.id)
-        .single(),
-      supabase
-        .from("photos")
-        .select("id")
-        .eq("user_id", user.id),
-    ]);
+  const [{ data: profile }, { data: portfolio }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("portfolios")
+      .select("*")
+      .eq("user_id", user.id)
+      .single(),
+  ]);
 
   if (!profile || !portfolio) redirect("/login");
 
-  const photoCount = photos?.length ?? 0;
+  const { count: photoCount } = await supabase
+    .from("photos")
+    .select("id", { count: "exact", head: true })
+    .eq("portfolio_id", portfolio.id);
   const isPublished = (portfolio as Portfolio).is_published;
 
   return (
@@ -54,7 +52,7 @@ export default async function DashboardPage() {
             value={isPublished ? "Published" : "Draft"}
             accent={isPublished}
           />
-          <Card label="Photos" value={String(photoCount)} />
+          <Card label="Photos" value={String(photoCount ?? 0)} />
         </div>
 
         <div className="mt-8 flex flex-wrap gap-6">
@@ -75,6 +73,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-3">
+          <QuickLink href="/dashboard/portfolio" label="Edit portfolio" />
           <QuickLink href="/dashboard/settings" label="Edit profile" />
           <QuickLink href="/dashboard/settings#theme" label="Customise theme" />
         </div>

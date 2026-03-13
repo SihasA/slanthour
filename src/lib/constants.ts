@@ -43,6 +43,26 @@ export const MODE_DEFAULTS = {
   light: { background: "#f7f5f2", text: "#1c1a18" },
 } as const;
 
+// ─── Photo upload constraints ────────────────────────────────
+export const PHOTO_MAX_DIMENSION = 2000;
+export const PHOTO_QUALITY = 0.8;
+export const PHOTO_ACCEPTED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+export const PHOTO_MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+export const BANNER_MAX_DIMENSION = 2400;
+export const BANNER_QUALITY = 0.85;
+
+// ─── Tier limits ─────────────────────────────────────────────
+export const TIER_LIMITS = {
+  free: { maxPhotos: 18 },
+  pro: { maxPhotos: 48 },
+  studio: { maxPhotos: 240 },
+} as const;
+
+// ─── Reserved slugs ─────────────────────────────────────────
 export const RESERVED_SLUGS = [
   "login",
   "signup",
