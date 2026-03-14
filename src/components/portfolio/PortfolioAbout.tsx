@@ -5,6 +5,10 @@ interface PortfolioAboutProps {
   instagramHandle: string | null;
   websiteUrl: string | null;
   accentColor: string;
+  headingFamily: string;
+  bodyFamily: string;
+  ruleColor: string;
+  mutedColor: string;
 }
 
 export function PortfolioAbout({
@@ -14,35 +18,71 @@ export function PortfolioAbout({
   instagramHandle,
   websiteUrl,
   accentColor,
+  headingFamily,
+  bodyFamily,
+  ruleColor,
+  mutedColor,
 }: PortfolioAboutProps) {
   const hasContact = emailPublic || instagramHandle || websiteUrl;
 
   if (!bio && !hasContact) return null;
 
   return (
-    <section className="px-6 md:px-12 py-16 md:py-24">
-      <div className="max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
-        {/* About text */}
-        <div>
-          <h2 className="font-heading text-[36px] font-light italic mb-6">
-            About
-          </h2>
-          {bio && (
-            <p className="font-heading text-[17px] italic opacity-70 leading-[1.8]">
-              {bio}
-            </p>
-          )}
-        </div>
+    <section
+      className="max-w-[1100px] mx-auto px-6 md:px-12 py-20 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-start"
+      style={{ borderTop: `1px solid ${ruleColor}` }}
+    >
+      {/* About text */}
+      <div>
+        <p
+          className="text-[9px] uppercase mb-6"
+          style={{
+            letterSpacing: "0.35em",
+            color: accentColor,
+            fontFamily: bodyFamily,
+          }}
+        >
+          About
+        </p>
+        <h2
+          className="text-[36px] font-light italic leading-[1.2] mb-5"
+          style={{ fontFamily: headingFamily }}
+        >
+          {displayName}
+        </h2>
+        {bio && (
+          <p
+            className="text-[17px] leading-[1.8]"
+            style={{ fontFamily: headingFamily, color: mutedColor }}
+          >
+            {bio}
+          </p>
+        )}
+      </div>
 
-        {/* Contact links */}
-        {hasContact && (
-          <div className="flex flex-col gap-5 md:mt-14">
+      {/* Contact links */}
+      {hasContact && (
+        <div>
+          <p
+            className="text-[9px] uppercase mb-6"
+            style={{
+              letterSpacing: "0.35em",
+              color: accentColor,
+              fontFamily: bodyFamily,
+            }}
+          >
+            Contact
+          </p>
+          <div className="flex flex-col">
             {emailPublic && (
               <ContactLink
                 href={`mailto:${emailPublic}`}
                 label="Email"
                 value={emailPublic}
                 accentColor={accentColor}
+                headingFamily={headingFamily}
+                ruleColor={ruleColor}
+                mutedColor={mutedColor}
               />
             )}
             {instagramHandle && (
@@ -51,6 +91,9 @@ export function PortfolioAbout({
                 label="Instagram"
                 value={`@${instagramHandle}`}
                 accentColor={accentColor}
+                headingFamily={headingFamily}
+                ruleColor={ruleColor}
+                mutedColor={mutedColor}
               />
             )}
             {websiteUrl && (
@@ -63,11 +106,14 @@ export function PortfolioAbout({
                 label="Website"
                 value={websiteUrl.replace(/^https?:\/\//, "")}
                 accentColor={accentColor}
+                headingFamily={headingFamily}
+                ruleColor={ruleColor}
+                mutedColor={mutedColor}
               />
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -77,32 +123,49 @@ function ContactLink({
   label,
   value,
   accentColor,
+  headingFamily,
+  ruleColor,
+  mutedColor,
 }: {
   href: string;
   label: string;
   value: string;
   accentColor: string;
+  headingFamily: string;
+  ruleColor: string;
+  mutedColor: string;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center justify-between py-3 border-t transition-colors"
-      style={{ borderColor: "currentColor", opacity: 0.15 }}
+      className="group flex items-center gap-4 py-4 transition-[gap] duration-200 hover:gap-6"
+      style={{
+        borderTop: `1px solid ${ruleColor}`,
+        textDecoration: "none",
+        color: "inherit",
+      }}
     >
-      <div>
-        <p
-          className="text-[9px] uppercase tracking-[0.25em] mb-1"
-          style={{ color: accentColor }}
-        >
-          {label}
-        </p>
-        <p className="font-heading text-[15px] italic opacity-80 group-hover:opacity-100 transition-opacity">
-          {value}
-        </p>
-      </div>
-      <span className="opacity-40 group-hover:opacity-80 group-hover:translate-x-1 transition-all">
+      <span
+        className="text-[9px] uppercase min-w-[80px]"
+        style={{
+          letterSpacing: "0.25em",
+          color: mutedColor,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        className="text-[18px] italic"
+        style={{ fontFamily: headingFamily }}
+      >
+        {value}
+      </span>
+      <span
+        className="ml-auto text-[16px] group-hover:translate-x-1 transition-transform duration-200"
+        style={{ color: accentColor }}
+      >
         &rarr;
       </span>
     </a>

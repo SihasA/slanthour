@@ -5,6 +5,7 @@ import type { Profile, Theme, Portfolio, Photo } from "@/types";
 import { PortfolioBanner } from "@/components/portfolio/PortfolioBanner";
 import { PortfolioGrid } from "@/components/portfolio/PortfolioGrid";
 import { PortfolioAbout } from "@/components/portfolio/PortfolioAbout";
+import { PortfolioHeader } from "@/components/portfolio/PortfolioHeader";
 import { FONT_PAIRS } from "@/lib/constants";
 
 // ─── Dynamic metadata ────────────────────────────────────────
@@ -29,7 +30,8 @@ export async function generateMetadata({
 
   const title = `${profile.display_name} — Slant Hour`;
   const description =
-    profile.bio ?? `${profile.display_name}'s photography portfolio on Slant Hour.`;
+    profile.bio ??
+    `${profile.display_name}'s photography portfolio on Slant Hour.`;
 
   return {
     title,
@@ -59,69 +61,64 @@ export default async function PortfolioPage({ params }: PageProps) {
 
   if (!profile) notFound();
 
-  const typedProfile = profile as Profile;
+  const p = profile as Profile;
 
-  // Fetch theme, portfolio, and photos in parallel
+  // Fetch theme + portfolio in parallel
   const [{ data: theme }, { data: portfolio }] = await Promise.all([
-    supabase
-      .from("themes")
-      .select("*")
-      .eq("user_id", typedProfile.id)
-      .single(),
-    supabase
-      .from("portfolios")
-      .select("*")
-      .eq("user_id", typedProfile.id)
-      .single(),
+    supabase.from("themes").select("*").eq("user_id", p.id).single(),
+    supabase.from("portfolios").select("*").eq("user_id", p.id).single(),
   ]);
 
   if (!portfolio) notFound();
 
-  const typedPortfolio = portfolio as Portfolio;
-  const typedTheme = theme as Theme | null;
+  const port = portfolio as Portfolio;
+  const t = theme as Theme | null;
 
-  // Only show published portfolios (unless there's no portfolio at all)
-  if (!typedPortfolio.is_published) notFound();
+  if (!port.is_published) notFound();
 
   // Fetch photos
   const { data: photos } = await supabase
     .from("photos")
     .select("*")
-    .eq("portfolio_id", typedPortfolio.id)
+    .eq("portfolio_id", port.id)
     .order("sort_order", { ascending: true });
 
-  const typedPhotos = (photos as Photo[]) ?? [];
+  const photoList = (photos as Photo[]) ?? [];
 
-  // Theme values with defaults
-  const bg = typedTheme?.color_background ?? "#0f0e0d";
-  const text = typedTheme?.color_text ?? "#f7f5f2";
-  const accent = typedTheme?.color_accent ?? "#9c8e7a";
-  const fontHeading = typedTheme?.font_heading ?? "Cormorant Garamond";
-  const fontBody = typedTheme?.font_body ?? "DM Mono";
+  // ─── Theme colours ─────────────────────────────────────────
+  const mode = t?.mode ?? "dark";
+  const bg = t?.color_background ?? "#0f0e0d";
+  const text = t?.color_text ?? "#f7f5f2";
+  const accent = t?.color_accent ?? "#9c8e7a";
+  const fontHeading = t?.font_heading ?? "Cormorant Garamond";
+  const fontBody = t?.font_body ?? "DM Mono";
 
-  // Build Google Fonts URL for this portfolio's custom fonts
+  // Derive secondary colours from the mode
+  const isDark = mode === "dark";
+  const muted = isDark ? "#6b6760" : "#8a8580";
+  const rule = isDark ? "#222120" : "#d8d4cf";
+  const surface = isDark ? "#161514" : "#edeae6";
+  const headerBg = isDark
+    ? "rgba(15,14,13,0.88)"
+    : "rgba(247,245,242,0.92)";
+
+  // Font families
+  const fontPair = FONT_PAIRS.find((fp) => fp.heading === fontHeading);
+  const headingFamily = `'${fontHeading}', ${fontPair ? "serif" : "sans-serif"}`;
+  const bodyFamily = `'${fontBody}', ${fontPair?.body.includes("Mono") || fontBody.includes("Mono") ? "monospace" : "sans-serif"}`;
+
   const fontUrl = buildGoogleFontsUrl(fontHeading, fontBody);
 
-  // Build photo URLs
-  const photoUrls = typedPhotos.map((p) => ({
-    src: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/portfolios/${p.storage_path}`,
-    caption: p.caption,
+  // Photo URLs
+  const photoUrls = photoList.map((ph) => ({
+    src: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/portfolios/${ph.storage_path}`,
+    caption: ph.caption,
   }));
 
-  // Find the matching font pair for proper CSS families
-  const fontPair = FONT_PAIRS.find(
-    (fp) => fp.heading === fontHeading
-  );
-  const headingFamily = fontPair
-    ? `'${fontPair.heading}', serif`
-    : `'${fontHeading}', serif`;
-  const bodyFamily = fontPair
-    ? `'${fontPair.body}', monospace`
-    : `'${fontBody}', sans-serif`;
+  const hasBanner = !!port.banner_url;
 
   return (
     <>
-      {/* Load custom fonts */}
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href={fontUrl} />
 
@@ -130,89 +127,71 @@ export default async function PortfolioPage({ params }: PageProps) {
           backgroundColor: bg,
           color: text,
           fontFamily: bodyFamily,
+          ["--rule-color" as string]: rule,
+          ["--surface-color" as string]: surface,
           ["--accent-color" as string]: accent,
         }}
         className="min-h-screen"
       >
-        {/* Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-5 transition-all duration-300 bg-transparent hover:backdrop-blur-md"
-          style={{
-            borderBottom: "1px solid transparent",
-          }}
-        >
-          <span
-            className="text-lg font-light italic tracking-tight"
-            style={{ fontFamily: headingFamily }}
-          >
-            {typedProfile.display_name}
-          </span>
-          <nav className="flex items-center gap-6 md:gap-8">
-            <a
-              href="#work"
-              className="text-[10px] uppercase tracking-[0.2em] opacity-50 hover:opacity-100 transition-opacity"
-              style={{ fontFamily: bodyFamily }}
-            >
-              Work
-            </a>
-            {(typedProfile.bio ||
-              typedProfile.email_public ||
-              typedProfile.instagram_handle) && (
-              <a
-                href="#about"
-                className="text-[10px] uppercase tracking-[0.2em] opacity-50 hover:opacity-100 transition-opacity"
-                style={{ fontFamily: bodyFamily }}
-              >
-                About
-              </a>
-            )}
-          </nav>
-        </header>
+        <PortfolioHeader
+          displayName={p.display_name}
+          hasBio={!!(p.bio || p.email_public || p.instagram_handle)}
+          hasBanner={hasBanner}
+          headingFamily={headingFamily}
+          bodyFamily={bodyFamily}
+          textColor={text}
+          mutedColor={muted}
+          bgColor={bg}
+          headerBg={headerBg}
+          ruleColor={rule}
+        />
 
-        {/* Banner (if set) */}
-        {typedPortfolio.banner_url && (
+        {/* Banner */}
+        {hasBanner && (
           <PortfolioBanner
-            bannerUrl={typedPortfolio.banner_url}
-            title={typedPortfolio.title}
-            subtitle={typedPortfolio.subtitle}
+            bannerUrl={port.banner_url!}
+            title={port.title}
+            subtitle={port.subtitle}
+            headingFamily={headingFamily}
           />
         )}
 
-        {/* Title (if no banner) */}
-        {!typedPortfolio.banner_url && (
-          <section className="pt-32 pb-12 md:pt-40 md:pb-16 px-6 md:px-12">
+        {/* Title (no banner) */}
+        {!hasBanner && (
+          <section className="pt-32 pb-8 md:pt-40 md:pb-12 px-6 md:px-12 max-w-[1200px] mx-auto">
             <h1
-              className="font-light italic leading-[0.95] tracking-tight mb-3"
+              className="font-light italic leading-[0.92] mb-4"
               style={{
                 fontFamily: headingFamily,
                 fontSize: "clamp(48px, 8vw, 88px)",
+                letterSpacing: "-0.02em",
               }}
             >
-              {typedPortfolio.title}
+              {port.title}
             </h1>
-            {typedPortfolio.subtitle && (
+            {port.subtitle && (
               <p
-                className="text-[17px] italic opacity-60 leading-relaxed max-w-[500px]"
-                style={{ fontFamily: headingFamily }}
+                className="text-[18px] italic leading-[1.7] max-w-[420px]"
+                style={{ fontFamily: headingFamily, color: muted }}
               >
-                {typedPortfolio.subtitle}
+                {port.subtitle}
               </p>
             )}
           </section>
         )}
 
-        {/* Photo grid */}
+        {/* Photos */}
         {photoUrls.length > 0 && (
           <section id="work">
             <PortfolioGrid photos={photoUrls} accentColor={accent} />
           </section>
         )}
 
-        {/* Empty state */}
         {photoUrls.length === 0 && (
           <section className="py-32 text-center">
             <p
-              className="text-[17px] italic opacity-40"
-              style={{ fontFamily: headingFamily }}
+              className="text-[17px] italic"
+              style={{ fontFamily: headingFamily, color: muted }}
             >
               No photos yet.
             </p>
@@ -222,28 +201,35 @@ export default async function PortfolioPage({ params }: PageProps) {
         {/* About */}
         <div id="about">
           <PortfolioAbout
-            displayName={typedProfile.display_name}
-            bio={typedProfile.bio}
-            emailPublic={typedProfile.email_public}
-            instagramHandle={typedProfile.instagram_handle}
-            websiteUrl={typedProfile.website_url}
+            displayName={p.display_name}
+            bio={p.bio}
+            emailPublic={p.email_public}
+            instagramHandle={p.instagram_handle}
+            websiteUrl={p.website_url}
             accentColor={accent}
+            headingFamily={headingFamily}
+            bodyFamily={bodyFamily}
+            ruleColor={rule}
+            mutedColor={muted}
           />
         </div>
 
         {/* Footer */}
         <footer
           className="px-6 md:px-12 py-7 flex flex-col md:flex-row justify-between items-center gap-3"
-          style={{ borderTop: `1px solid ${accent}20` }}
+          style={{ borderTop: `1px solid ${rule}` }}
         >
           <span
-            className="text-sm italic opacity-60"
-            style={{ fontFamily: headingFamily }}
+            className="italic text-base"
+            style={{ fontFamily: headingFamily, color: muted }}
           >
-            {typedProfile.display_name}
+            {p.display_name}
           </span>
-          <span className="text-[9px] tracking-[0.2em] opacity-30">
-            Portfolio by{" "}
+          <span
+            className="text-[9px] opacity-50"
+            style={{ letterSpacing: "0.15em", color: muted }}
+          >
+            &copy; {new Date().getFullYear()} &middot; Portfolio by{" "}
             <a
               href="https://slanthour.com"
               className="hover:opacity-80 transition-opacity"
@@ -266,10 +252,7 @@ function buildGoogleFontsUrl(heading: string, body: string): string {
   const encode = (name: string, weights: string) =>
     `family=${name.replace(/ /g, "+")}:ital,wght@${weights}`;
 
-  // Heading font — always include italic
   families.push(encode(heading, "0,300;0,400;1,300;1,400"));
-
-  // Body font (if different from heading)
   if (body !== heading) {
     families.push(encode(body, "0,300;0,400;1,300;1,400"));
   }

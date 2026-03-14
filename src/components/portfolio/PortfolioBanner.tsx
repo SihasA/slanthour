@@ -2,15 +2,17 @@ interface PortfolioBannerProps {
   bannerUrl: string;
   title: string;
   subtitle: string | null;
+  headingFamily: string;
 }
 
 export function PortfolioBanner({
   bannerUrl,
   title,
   subtitle,
+  headingFamily,
 }: PortfolioBannerProps) {
   return (
-    <section className="relative h-[70vh] overflow-hidden">
+    <section data-banner className="relative h-[70vh] overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={bannerUrl}
@@ -23,13 +25,19 @@ export function PortfolioBanner({
       {/* Text */}
       <div className="absolute bottom-0 left-0 right-0 px-6 md:px-12 pb-10 md:pb-14">
         <h1
-          className="font-heading font-light italic leading-[0.95] tracking-tight mb-3"
-          style={{ fontSize: "clamp(48px, 8vw, 88px)" }}
+          className="font-light italic leading-[0.95] tracking-tight mb-3"
+          style={{
+            fontFamily: headingFamily,
+            fontSize: "clamp(48px, 8vw, 88px)",
+          }}
         >
           {title}
         </h1>
         {subtitle && (
-          <p className="font-heading text-[17px] italic opacity-70 leading-relaxed max-w-[500px]">
+          <p
+            className="text-[17px] italic opacity-70 leading-relaxed max-w-[500px]"
+            style={{ fontFamily: headingFamily }}
+          >
             {subtitle}
           </p>
         )}
