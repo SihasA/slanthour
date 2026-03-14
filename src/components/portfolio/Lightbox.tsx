@@ -11,46 +11,47 @@ interface LightboxProps {
   photos: LightboxPhoto[];
   initialIndex: number;
   onClose: () => void;
-  accentColor: string;
 }
 
-export function Lightbox({
-  photos,
-  initialIndex,
-  onClose,
-  accentColor,
-}: LightboxProps) {
+export function Lightbox({ photos, initialIndex, onClose }: LightboxProps) {
   const [index, setIndex] = useState(initialIndex);
   const [active, setActive] = useState(false);
-  const [uiVisible, setUiVisible] = useState(true);
+  const [uiVisible, setUiVisible] = useState(false);
   const uiTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchStartRef = useRef<number>(0);
+  const scrollYRef = useRef(0);
 
   const photo = photos[index];
 
-  // Fade in on mount
+  // Lock body scroll and fade in
   useEffect(() => {
-    requestAnimationFrame(() => setActive(true));
+    scrollYRef.current = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollYRef.current}px`;
+    document.body.style.width = "100%";
     document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => setActive(true));
+
     return () => {
+      document.body.style.position = "";
       document.body.style.overflow = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollYRef.current);
     };
   }, []);
 
   // Preload adjacent images
   useEffect(() => {
-    const preload = (i: number) => {
-      if (i >= 0 && i < photos.length) {
-        const img = new Image();
-        img.src = photos[i].src;
-      }
-    };
-    preload(index - 1);
-    preload(index + 1);
+    [-1, 1].forEach((d) => {
+      const i = (index + d + photos.length) % photos.length;
+      const img = new Image();
+      img.src = photos[i].src;
+    });
   }, [index, photos]);
 
-  // Auto-hide UI on mobile
-  const showUi = useCallback(() => {
+  // Touch: show UI briefly
+  const showUiTouch = useCallback(() => {
     setUiVisible(true);
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
     uiTimerRef.current = setTimeout(() => setUiVisible(false), 2500);
@@ -58,14 +59,11 @@ export function Lightbox({
 
   const navigate = useCallback(
     (dir: -1 | 1) => {
-      setIndex((prev) => {
-        const next = prev + dir;
-        if (next < 0 || next >= photos.length) return prev;
-        return next;
-      });
-      showUi();
+      setIndex(
+        (prev) => (prev + dir + photos.length) % photos.length
+      );
     },
-    [photos.length, showUi]
+    [photos.length]
   );
 
   const handleClose = useCallback(() => {
@@ -77,115 +75,217 @@ export function Lightbox({
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") handleClose();
-      if (e.key === "ArrowLeft") navigate(-1);
       if (e.key === "ArrowRight") navigate(1);
+      if (e.key === "ArrowLeft") navigate(-1);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleClose, navigate]);
 
-  // Touch/swipe
+  // Touch swipe
   function handleTouchStart(e: React.TouchEvent) {
-    touchStartRef.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-    };
-    showUi();
+    touchStartRef.current = e.touches[0].clientX;
+    showUiTouch();
   }
 
   function handleTouchEnd(e: React.TouchEvent) {
-    if (!touchStartRef.current) return;
-    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
-    if (Math.abs(dx) > 50) {
-      navigate(dx > 0 ? -1 : 1);
-    }
-    touchStartRef.current = null;
+    const diff = touchStartRef.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
   }
 
   return (
     <div
-      className={`fixed inset-0 z-[999] bg-black flex items-center justify-center transition-opacity duration-250 ${
-        active ? "opacity-100" : "opacity-0"
-      }`}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 999,
+        background: "#000",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: active ? 1 : 0,
+        pointerEvents: active ? "all" : "none",
+        transition: "opacity 0.25s ease",
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      onClick={showUi}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Image */}
-      <div
-        className={`w-full h-full flex items-center justify-center p-4 md:p-12 transition-transform duration-300 ${
-          active ? "scale-100" : "scale-[0.98]"
-        }`}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          key={photo.src}
-          src={photo.src}
-          alt={photo.caption || ""}
-          className="max-w-full max-h-full object-contain select-none pointer-events-none"
-          style={{ userSelect: "none", WebkitUserDrag: "none" } as React.CSSProperties}
-          draggable={false}
-        />
-      </div>
+      {/* Image — full viewport, exact legacy */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={photo.src}
+        src={photo.src}
+        alt={photo.caption || ""}
+        style={{
+          width: "100vw",
+          height: "100vh",
+          objectFit: "contain",
+          display: "block",
+          transform: active ? "scale(1)" : "scale(0.98)",
+          transition:
+            "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.1s ease",
+          pointerEvents: "none",
+          userSelect: "none",
+          WebkitUserDrag: "none",
+          WebkitTouchCallout: "none",
+        } as React.CSSProperties}
+        draggable={false}
+      />
 
-      {/* UI overlay */}
+      {/* UI overlay — hidden by default, visible on hover / touch */}
       <div
-        className={`absolute inset-0 pointer-events-none transition-opacity duration-300 ${
-          uiVisible ? "opacity-100" : "opacity-0 md:hover:opacity-100"
-        }`}
-        onMouseMove={showUi}
+        className="lightbox-ui"
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: uiVisible ? 1 : 0,
+          transition: "opacity 0.2s ease",
+          pointerEvents: "none",
+        }}
       >
         {/* Top bar: counter + close */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-5 pointer-events-auto">
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "20px 28px",
+            pointerEvents: "auto",
+          }}
+        >
           <span
-            className="text-[11px] tracking-wide"
-            style={{ color: accentColor }}
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.2em",
+              color: "rgba(255,255,255,0.45)",
+            }}
           >
             {index + 1} / {photos.length}
           </span>
           <button
             onClick={handleClose}
-            className="text-white/60 hover:text-white transition-colors"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 10,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase" as const,
+              color: "rgba(255,255,255,0.45)",
+              padding: 8,
+              transition: "color 0.2s ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "#fff")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "rgba(255,255,255,0.45)")
+            }
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" stroke="currentColor" strokeWidth="1.5">
-              <line x1="2" y1="2" x2="16" y2="16" />
-              <line x1="16" y1="2" x2="2" y2="16" />
-            </svg>
+            Close &times;
           </button>
         </div>
 
         {/* Prev arrow */}
-        {index > 0 && (
-          <button
-            onClick={() => navigate(-1)}
-            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors pointer-events-auto p-2"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M15 4L7 12L15 20" />
-            </svg>
-          </button>
-        )}
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            position: "absolute",
+            top: "50%",
+            transform: "translateY(-50%)",
+            left: 0,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "24px 20px",
+            color: "rgba(255,255,255,0.3)",
+            fontSize: 18,
+            transition: "color 0.2s ease",
+            pointerEvents: "auto",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "rgba(255,255,255,0.9)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "rgba(255,255,255,0.3)")
+          }
+        >
+          &#8592;
+        </button>
 
         {/* Next arrow */}
-        {index < photos.length - 1 && (
-          <button
-            onClick={() => navigate(1)}
-            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors pointer-events-auto p-2"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M9 4L17 12L9 20" />
-            </svg>
-          </button>
-        )}
+        <button
+          onClick={() => navigate(1)}
+          style={{
+            position: "absolute",
+            top: "50%",
+            transform: "translateY(-50%)",
+            right: 0,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "24px 20px",
+            color: "rgba(255,255,255,0.3)",
+            fontSize: 18,
+            transition: "color 0.2s ease",
+            pointerEvents: "auto",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "rgba(255,255,255,0.9)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "rgba(255,255,255,0.3)")
+          }
+        >
+          &#8594;
+        </button>
 
-        {/* Caption */}
+        {/* Bottom caption */}
         {photo.caption && (
-          <div className="absolute bottom-0 left-0 right-0 text-center px-6 py-5 pointer-events-auto">
-            <p className="text-[13px] italic text-white/50">{photo.caption}</p>
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: "24px 28px",
+              display: "flex",
+              justifyContent: "center",
+              pointerEvents: "auto",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontStyle: "italic",
+                fontSize: 14,
+                color: "rgba(255,255,255,0.4)",
+              }}
+            >
+              {photo.caption}
+            </span>
           </div>
         )}
       </div>
+
+      {/* Hover to reveal UI on desktop */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .lightbox-ui { pointer-events: none; }
+            div:hover > .lightbox-ui { opacity: 1 !important; pointer-events: all; }
+          `,
+        }}
+      />
     </div>
   );
 }

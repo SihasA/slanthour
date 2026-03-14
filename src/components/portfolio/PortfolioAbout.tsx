@@ -1,14 +1,13 @@
+"use client";
+
+import { useState } from "react";
+
 interface PortfolioAboutProps {
   displayName: string;
   bio: string | null;
   emailPublic: string | null;
   instagramHandle: string | null;
   websiteUrl: string | null;
-  accentColor: string;
-  headingFamily: string;
-  bodyFamily: string;
-  ruleColor: string;
-  mutedColor: string;
 }
 
 export function PortfolioAbout({
@@ -17,104 +16,134 @@ export function PortfolioAbout({
   emailPublic,
   instagramHandle,
   websiteUrl,
-  accentColor,
-  headingFamily,
-  bodyFamily,
-  ruleColor,
-  mutedColor,
 }: PortfolioAboutProps) {
   const hasContact = emailPublic || instagramHandle || websiteUrl;
 
   if (!bio && !hasContact) return null;
 
   return (
-    <section
-      className="max-w-[1100px] mx-auto px-6 md:px-12 py-20 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-start"
-      style={{ borderTop: `1px solid ${ruleColor}` }}
-    >
-      {/* About text */}
-      <div>
-        <p
-          className="text-[9px] uppercase mb-6"
-          style={{
-            letterSpacing: "0.35em",
-            color: accentColor,
-            fontFamily: bodyFamily,
-          }}
-        >
-          About
-        </p>
-        <h2
-          className="text-[36px] font-light italic leading-[1.2] mb-5"
-          style={{ fontFamily: headingFamily }}
-        >
-          {displayName}
-        </h2>
-        {bio && (
-          <p
-            className="text-[17px] leading-[1.8]"
-            style={{ fontFamily: headingFamily, color: mutedColor }}
-          >
-            {bio}
-          </p>
-        )}
-      </div>
-
-      {/* Contact links */}
-      {hasContact && (
+    <>
+      <section
+        className="about-section"
+        style={{
+          borderTop: "1px solid #222120",
+          maxWidth: 1100,
+          margin: "0 auto",
+          padding: "80px 48px 120px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 80,
+          alignItems: "start",
+        }}
+      >
+        {/* About text */}
         <div>
           <p
-            className="text-[9px] uppercase mb-6"
             style={{
+              fontSize: 9,
               letterSpacing: "0.35em",
-              color: accentColor,
-              fontFamily: bodyFamily,
+              textTransform: "uppercase" as const,
+              color: "#9c8e7a",
+              marginBottom: 24,
+              fontFamily: "'DM Mono', monospace",
             }}
           >
-            Contact
+            About
           </p>
-          <div className="flex flex-col">
-            {emailPublic && (
-              <ContactLink
-                href={`mailto:${emailPublic}`}
-                label="Email"
-                value={emailPublic}
-                accentColor={accentColor}
-                headingFamily={headingFamily}
-                ruleColor={ruleColor}
-                mutedColor={mutedColor}
-              />
-            )}
-            {instagramHandle && (
-              <ContactLink
-                href={`https://instagram.com/${instagramHandle}`}
-                label="Instagram"
-                value={`@${instagramHandle}`}
-                accentColor={accentColor}
-                headingFamily={headingFamily}
-                ruleColor={ruleColor}
-                mutedColor={mutedColor}
-              />
-            )}
-            {websiteUrl && (
-              <ContactLink
-                href={
-                  websiteUrl.startsWith("http")
-                    ? websiteUrl
-                    : `https://${websiteUrl}`
-                }
-                label="Website"
-                value={websiteUrl.replace(/^https?:\/\//, "")}
-                accentColor={accentColor}
-                headingFamily={headingFamily}
-                ruleColor={ruleColor}
-                mutedColor={mutedColor}
-              />
-            )}
-          </div>
+          <h2
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 36,
+              fontWeight: 300,
+              fontStyle: "italic",
+              lineHeight: 1.2,
+              color: "#e8e4df",
+              marginBottom: 20,
+            }}
+          >
+            {displayName}
+          </h2>
+          {bio && (
+            <p
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 17,
+                lineHeight: 1.8,
+                color: "#6b6760",
+              }}
+            >
+              {bio}
+            </p>
+          )}
         </div>
-      )}
-    </section>
+
+        {/* Contact links */}
+        {hasContact && (
+          <div id="contact">
+            <p
+              style={{
+                fontSize: 9,
+                letterSpacing: "0.35em",
+                textTransform: "uppercase" as const,
+                color: "#9c8e7a",
+                marginBottom: 24,
+                fontFamily: "'DM Mono', monospace",
+              }}
+            >
+              Contact
+            </p>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column" as const,
+                marginTop: 32,
+              }}
+            >
+              {emailPublic && (
+                <ContactLink
+                  href={`mailto:${emailPublic}`}
+                  label="Email"
+                  value={emailPublic}
+                />
+              )}
+              {instagramHandle && (
+                <ContactLink
+                  href={`https://instagram.com/${instagramHandle}`}
+                  label="Instagram"
+                  value={`@${instagramHandle}`}
+                />
+              )}
+              {websiteUrl && (
+                <ContactLink
+                  href={
+                    websiteUrl.startsWith("http")
+                      ? websiteUrl
+                      : `https://${websiteUrl}`
+                  }
+                  label="Website"
+                  value={websiteUrl.replace(/^https?:\/\//, "")}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Responsive override */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media (max-width: 768px) {
+              .about-section {
+                grid-template-columns: 1fr !important;
+                gap: 48px !important;
+                padding: 60px 24px 80px !important;
+              }
+            }
+          `,
+        }}
+      />
+    </>
   );
 }
 
@@ -122,49 +151,60 @@ function ContactLink({
   href,
   label,
   value,
-  accentColor,
-  headingFamily,
-  ruleColor,
-  mutedColor,
 }: {
   href: string;
   label: string;
   value: string;
-  accentColor: string;
-  headingFamily: string;
-  ruleColor: string;
-  mutedColor: string;
 }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-4 py-4 transition-[gap] duration-200 hover:gap-6"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        borderTop: `1px solid ${ruleColor}`,
+        display: "flex",
+        alignItems: "center",
+        gap: hovered ? 24 : 16,
         textDecoration: "none",
-        color: "inherit",
+        color: "#e8e4df",
+        padding: "16px 0",
+        borderTop: "1px solid #222120",
+        transition: "gap 0.2s ease",
       }}
     >
       <span
-        className="text-[9px] uppercase min-w-[80px]"
         style={{
+          fontSize: 9,
           letterSpacing: "0.25em",
-          color: mutedColor,
+          textTransform: "uppercase" as const,
+          color: "#6b6760",
+          minWidth: 80,
+          fontFamily: "'DM Mono', monospace",
         }}
       >
         {label}
       </span>
       <span
-        className="text-[18px] italic"
-        style={{ fontFamily: headingFamily }}
+        style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 18,
+          fontStyle: "italic",
+        }}
       >
         {value}
       </span>
       <span
-        className="ml-auto text-[16px] group-hover:translate-x-1 transition-transform duration-200"
-        style={{ color: accentColor }}
+        style={{
+          marginLeft: "auto",
+          fontSize: 16,
+          color: "#9c8e7a",
+          transition: "transform 0.2s ease",
+          transform: hovered ? "translateX(4px)" : "translateX(0)",
+        }}
       >
         &rarr;
       </span>

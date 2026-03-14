@@ -1,12 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import type { Profile, Theme, Portfolio, Photo } from "@/types";
+import type { Profile, Portfolio, Photo } from "@/types";
 import { PortfolioBanner } from "@/components/portfolio/PortfolioBanner";
 import { PortfolioGrid } from "@/components/portfolio/PortfolioGrid";
 import { PortfolioAbout } from "@/components/portfolio/PortfolioAbout";
 import { PortfolioHeader } from "@/components/portfolio/PortfolioHeader";
-import { FONT_PAIRS } from "@/lib/constants";
 
 // ─── Dynamic metadata ────────────────────────────────────────
 
@@ -63,16 +62,16 @@ export default async function PortfolioPage({ params }: PageProps) {
 
   const p = profile as Profile;
 
-  // Fetch theme + portfolio in parallel
-  const [{ data: theme }, { data: portfolio }] = await Promise.all([
-    supabase.from("themes").select("*").eq("user_id", p.id).single(),
-    supabase.from("portfolios").select("*").eq("user_id", p.id).single(),
-  ]);
+  // Fetch portfolio
+  const { data: portfolio } = await supabase
+    .from("portfolios")
+    .select("*")
+    .eq("user_id", p.id)
+    .single();
 
   if (!portfolio) notFound();
 
   const port = portfolio as Portfolio;
-  const t = theme as Theme | null;
 
   if (!port.is_published) notFound();
 
@@ -85,30 +84,6 @@ export default async function PortfolioPage({ params }: PageProps) {
 
   const photoList = (photos as Photo[]) ?? [];
 
-  // ─── Theme colours ─────────────────────────────────────────
-  const mode = t?.mode ?? "dark";
-  const bg = t?.color_background ?? "#0f0e0d";
-  const text = t?.color_text ?? "#f7f5f2";
-  const accent = t?.color_accent ?? "#9c8e7a";
-  const fontHeading = t?.font_heading ?? "Cormorant Garamond";
-  const fontBody = t?.font_body ?? "DM Mono";
-
-  // Derive secondary colours from the mode
-  const isDark = mode === "dark";
-  const muted = isDark ? "#6b6760" : "#8a8580";
-  const rule = isDark ? "#222120" : "#d8d4cf";
-  const surface = isDark ? "#161514" : "#edeae6";
-  const headerBg = isDark
-    ? "rgba(15,14,13,0.88)"
-    : "rgba(247,245,242,0.92)";
-
-  // Font families
-  const fontPair = FONT_PAIRS.find((fp) => fp.heading === fontHeading);
-  const headingFamily = `'${fontHeading}', ${fontPair ? "serif" : "sans-serif"}`;
-  const bodyFamily = `'${fontBody}', ${fontPair?.body.includes("Mono") || fontBody.includes("Mono") ? "monospace" : "sans-serif"}`;
-
-  const fontUrl = buildGoogleFontsUrl(fontHeading, fontBody);
-
   // Photo URLs
   const photoUrls = photoList.map((ph) => ({
     src: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/portfolios/${ph.storage_path}`,
@@ -116,34 +91,56 @@ export default async function PortfolioPage({ params }: PageProps) {
   }));
 
   const hasBanner = !!port.banner_url;
+  const hasAbout = !!(p.bio || p.email_public || p.instagram_handle || p.website_url);
 
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="stylesheet" href={fontUrl} />
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap"
+      />
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            html { scroll-behavior: smooth; }
+            body {
+              background: #0f0e0d;
+              color: #e8e4df;
+              font-family: 'DM Mono', monospace;
+              font-weight: 300;
+              -webkit-font-smoothing: antialiased;
+            }
+            @media (max-width: 768px) {
+              .portfolio-header { padding: 20px 24px !important; }
+              .portfolio-header nav { gap: 20px !important; }
+              .portfolio-banner { height: 50vh !important; min-height: 300px !important; }
+              .portfolio-banner-text { bottom: 32px !important; left: 24px !important; right: 24px !important; }
+              .portfolio-footer {
+                padding: 24px !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+                text-align: center !important;
+              }
+            }
+          `,
+        }}
+      />
 
       <div
         style={{
-          backgroundColor: bg,
-          color: text,
-          fontFamily: bodyFamily,
-          ["--rule-color" as string]: rule,
-          ["--surface-color" as string]: surface,
-          ["--accent-color" as string]: accent,
+          background: "#0f0e0d",
+          color: "#e8e4df",
+          fontFamily: "'DM Mono', monospace",
+          fontWeight: 300,
         }}
         className="min-h-screen"
       >
         <PortfolioHeader
           displayName={p.display_name}
-          hasBio={!!(p.bio || p.email_public || p.instagram_handle)}
+          hasAbout={hasAbout}
           hasBanner={hasBanner}
-          headingFamily={headingFamily}
-          bodyFamily={bodyFamily}
-          textColor={text}
-          mutedColor={muted}
-          bgColor={bg}
-          headerBg={headerBg}
-          ruleColor={rule}
         />
 
         {/* Banner */}
@@ -152,27 +149,41 @@ export default async function PortfolioPage({ params }: PageProps) {
             bannerUrl={port.banner_url!}
             title={port.title}
             subtitle={port.subtitle}
-            headingFamily={headingFamily}
           />
         )}
 
         {/* Title (no banner) */}
         {!hasBanner && (
-          <section className="pt-32 pb-8 md:pt-40 md:pb-12 px-6 md:px-12 max-w-[1200px] mx-auto">
+          <section
+            style={{
+              maxWidth: 1200,
+              margin: "0 auto",
+              padding: "140px 48px 32px",
+            }}
+          >
             <h1
-              className="font-light italic leading-[0.92] mb-4"
               style={{
-                fontFamily: headingFamily,
+                fontFamily: "'Cormorant Garamond', serif",
                 fontSize: "clamp(48px, 8vw, 88px)",
+                fontWeight: 300,
+                lineHeight: 0.92,
                 letterSpacing: "-0.02em",
+                color: "#e8e4df",
+                marginBottom: 16,
               }}
             >
               {port.title}
             </h1>
             {port.subtitle && (
               <p
-                className="text-[18px] italic leading-[1.7] max-w-[420px]"
-                style={{ fontFamily: headingFamily, color: muted }}
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 18,
+                  fontStyle: "italic",
+                  color: "rgba(255,255,255,0.6)",
+                  maxWidth: 420,
+                  lineHeight: 1.7,
+                }}
               >
                 {port.subtitle}
               </p>
@@ -182,58 +193,80 @@ export default async function PortfolioPage({ params }: PageProps) {
 
         {/* Photos */}
         {photoUrls.length > 0 && (
-          <section id="work">
-            <PortfolioGrid photos={photoUrls} accentColor={accent} />
-          </section>
+          <div id="work">
+            <PortfolioGrid photos={photoUrls} />
+          </div>
         )}
 
         {photoUrls.length === 0 && (
-          <section className="py-32 text-center">
-            <p
-              className="text-[17px] italic"
-              style={{ fontFamily: headingFamily, color: muted }}
+          <div
+            style={{
+              maxWidth: 1200,
+              margin: "0 auto",
+              padding: "40px 24px 120px",
+            }}
+          >
+            <div
+              style={{
+                padding: 80,
+                textAlign: "center",
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase" as const,
+                color: "#6b6760",
+              }}
             >
               No photos yet.
-            </p>
-          </section>
+            </div>
+          </div>
         )}
 
         {/* About */}
-        <div id="about">
-          <PortfolioAbout
-            displayName={p.display_name}
-            bio={p.bio}
-            emailPublic={p.email_public}
-            instagramHandle={p.instagram_handle}
-            websiteUrl={p.website_url}
-            accentColor={accent}
-            headingFamily={headingFamily}
-            bodyFamily={bodyFamily}
-            ruleColor={rule}
-            mutedColor={muted}
-          />
-        </div>
+        {hasAbout && (
+          <div id="about">
+            <PortfolioAbout
+              displayName={p.display_name}
+              bio={p.bio}
+              emailPublic={p.email_public}
+              instagramHandle={p.instagram_handle}
+              websiteUrl={p.website_url}
+            />
+          </div>
+        )}
 
         {/* Footer */}
         <footer
-          className="px-6 md:px-12 py-7 flex flex-col md:flex-row justify-between items-center gap-3"
-          style={{ borderTop: `1px solid ${rule}` }}
+          className="portfolio-footer"
+          style={{
+            borderTop: "1px solid #222120",
+            padding: "28px 48px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
           <span
-            className="italic text-base"
-            style={{ fontFamily: headingFamily, color: muted }}
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontStyle: "italic",
+              fontSize: 16,
+              color: "#6b6760",
+            }}
           >
-            {p.display_name}
+            {p.display_name.split(" ")[0]}
           </span>
           <span
-            className="text-[9px] opacity-50"
-            style={{ letterSpacing: "0.15em", color: muted }}
+            style={{
+              fontSize: 9,
+              letterSpacing: "0.15em",
+              color: "#6b6760",
+              opacity: 0.5,
+            }}
           >
             &copy; {new Date().getFullYear()} &middot; Portfolio by{" "}
             <a
               href="https://slanthour.com"
-              className="hover:opacity-80 transition-opacity"
-              style={{ color: accent }}
+              style={{ color: "#9c8e7a", textDecoration: "none" }}
             >
               Slant Hour
             </a>
@@ -242,20 +275,4 @@ export default async function PortfolioPage({ params }: PageProps) {
       </div>
     </>
   );
-}
-
-// ─── Helpers ─────────────────────────────────────────────────
-
-function buildGoogleFontsUrl(heading: string, body: string): string {
-  const families: string[] = [];
-
-  const encode = (name: string, weights: string) =>
-    `family=${name.replace(/ /g, "+")}:ital,wght@${weights}`;
-
-  families.push(encode(heading, "0,300;0,400;1,300;1,400"));
-  if (body !== heading) {
-    families.push(encode(body, "0,300;0,400;1,300;1,400"));
-  }
-
-  return `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap`;
 }

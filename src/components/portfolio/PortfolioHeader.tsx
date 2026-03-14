@@ -4,27 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 
 interface PortfolioHeaderProps {
   displayName: string;
-  hasBio: boolean;
+  hasAbout: boolean;
   hasBanner: boolean;
-  headingFamily: string;
-  bodyFamily: string;
-  textColor: string;
-  mutedColor: string;
-  bgColor: string;
-  headerBg: string;
-  ruleColor: string;
 }
 
 export function PortfolioHeader({
   displayName,
-  hasBio,
+  hasAbout,
   hasBanner,
-  headingFamily,
-  bodyFamily,
-  textColor,
-  mutedColor,
-  headerBg,
-  ruleColor,
 }: PortfolioHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [overBanner, setOverBanner] = useState(hasBanner);
@@ -47,95 +34,84 @@ export function PortfolioHeader({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
-  // Determine colours based on scroll state
-  const showWhiteText = hasBanner && overBanner && !scrolled;
+  const isOverBanner = hasBanner && overBanner;
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-[100] flex justify-between items-center transition-[background,border-color] duration-300 ease-out"
+      className="portfolio-header"
       style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
         padding: "24px 48px",
-        background: scrolled ? headerBg : "transparent",
-        backdropFilter: scrolled ? "blur(16px)" : "none",
-        WebkitBackdropFilter: scrolled ? "blur(16px)" : "none",
-        borderBottom: `1px solid ${scrolled ? ruleColor : "transparent"}`,
+        background: scrolled ? "rgba(15,14,13,0.88)" : "transparent",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderBottom: `1px solid ${scrolled ? "#222120" : "transparent"}`,
+        transition: "background 0.3s ease, border-color 0.3s ease",
       }}
     >
-      {/* Logo / Name */}
+      {/* Logo */}
       <a
         href="#"
-        className="no-underline transition-colors duration-200"
         style={{
-          fontFamily: headingFamily,
-          fontSize: "20px",
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 20,
           fontStyle: "italic",
           fontWeight: 300,
           letterSpacing: "0.02em",
-          color: showWhiteText ? "rgba(255,255,255,0.85)" : textColor,
+          color: isOverBanner ? "rgba(255,255,255,0.85)" : "#e8e4df",
+          textDecoration: "none",
         }}
       >
         {displayName.split(" ")[0]}
       </a>
 
-      {/* Nav links */}
-      <nav className="flex items-center" style={{ gap: "32px" }}>
-        <NavLink
-          href="#work"
-          label="Work"
-          bodyFamily={bodyFamily}
-          textColor={textColor}
-          mutedColor={mutedColor}
-          isWhite={showWhiteText}
-        />
-        {hasBio && (
-          <NavLink
-            href="#about"
-            label="About"
-            bodyFamily={bodyFamily}
-            textColor={textColor}
-            mutedColor={mutedColor}
-            isWhite={showWhiteText}
-          />
+      {/* Nav */}
+      <nav style={{ display: "flex", gap: 32, alignItems: "center" }}>
+        <HeaderLink href="#work" label="Work" isOverBanner={isOverBanner} />
+        {hasAbout && (
+          <HeaderLink href="#about" label="About" isOverBanner={isOverBanner} />
         )}
       </nav>
     </header>
   );
 }
 
-function NavLink({
+function HeaderLink({
   href,
   label,
-  bodyFamily,
-  textColor,
-  mutedColor,
-  isWhite,
+  isOverBanner,
 }: {
   href: string;
   label: string;
-  bodyFamily: string;
-  textColor: string;
-  mutedColor: string;
-  isWhite: boolean;
+  isOverBanner: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const color = isWhite
+  const color = isOverBanner
     ? hovered
       ? "#fff"
-      : "rgba(255,255,255,0.6)"
+      : "rgba(255,255,255,0.85)"
     : hovered
-      ? textColor
-      : mutedColor;
+      ? "#e8e4df"
+      : "#6b6760";
 
   return (
     <a
       href={href}
-      className="no-underline uppercase transition-colors duration-200"
       style={{
-        fontSize: "10px",
+        fontSize: 10,
         letterSpacing: "0.2em",
+        textTransform: "uppercase",
         color,
-        fontFamily: bodyFamily,
+        textDecoration: "none",
+        transition: "color 0.2s ease",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
