@@ -1,6 +1,7 @@
 // ─── Database row types ───────────────────────────────────────
 
 export type Tier = "free" | "pro" | "studio";
+export type LayoutTheme = "editorial" | "journal" | "cinematic";
 
 export interface Profile {
   id: string;
@@ -25,6 +26,7 @@ export interface Theme {
   color_background: string;
   color_text: string;
   color_accent: string;
+  layout_theme: LayoutTheme;
 }
 
 export interface Portfolio {

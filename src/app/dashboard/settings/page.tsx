@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/components/dashboard/ProfileForm";
-import { ThemeForm } from "@/components/dashboard/ThemeForm";
+import { ThemeSettings } from "@/components/dashboard/ThemeSettings";
 import type { Profile, Theme } from "@/types";
 
 export default async function SettingsPage() {
@@ -43,14 +43,8 @@ export default async function SettingsPage() {
         <ProfileForm profile={profile as Profile} />
       </section>
 
-      {/* Theme section */}
-      <section id="theme">
-        <div className="flex items-center gap-5 mb-8">
-          <span className="section-label whitespace-nowrap">Theme</span>
-          <div className="flex-1 h-px bg-rule" />
-        </div>
-        <ThemeForm theme={theme as Theme} />
-      </section>
+      {/* Theme: layout picker + customize (colours/fonts) */}
+      <ThemeSettings initialTheme={theme as Theme} />
     </div>
   );
 }

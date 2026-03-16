@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { TITLE_MAX_LENGTH, SUBTITLE_MAX_LENGTH } from "@/lib/constants";
 import type { Portfolio } from "@/types";
 
 interface PortfolioSettingsProps {
@@ -16,7 +17,12 @@ export function PortfolioSettings({ portfolio }: PortfolioSettingsProps) {
   const [status, setStatus] = useState<string | null>(null);
   const [publishSaving, setPublishSaving] = useState(false);
 
+  const titleOver = title.length > TITLE_MAX_LENGTH;
+  const subtitleOver = subtitle.length > SUBTITLE_MAX_LENGTH;
+  const canSave = !titleOver && !subtitleOver && title.trim().length > 0;
+
   async function handleSave() {
+    if (!canSave) return;
     setSaving(true);
     setStatus("Saving...");
 
@@ -66,9 +72,21 @@ export function PortfolioSettings({ portfolio }: PortfolioSettingsProps) {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={TITLE_MAX_LENGTH + 5}
             placeholder="Portfolio title"
-            className="w-full bg-transparent border border-rule px-4 py-3 font-heading italic text-[15px] text-foreground placeholder:text-muted/40 focus:border-accent focus:outline-none transition-colors"
+            className={`w-full bg-transparent border px-4 py-3 font-heading italic text-[15px] text-foreground placeholder:text-muted/40 focus:outline-none transition-colors ${
+              titleOver
+                ? "border-red-400 focus:border-red-400"
+                : "border-rule focus:border-accent"
+            }`}
           />
+          <p
+            className={`text-[11px] mt-1.5 ${
+              titleOver ? "text-red-400" : title.length > TITLE_MAX_LENGTH - 5 ? "text-accent" : "text-muted/50"
+            }`}
+          >
+            {title.length}/{TITLE_MAX_LENGTH}
+          </p>
         </div>
 
         <div>
@@ -79,15 +97,27 @@ export function PortfolioSettings({ portfolio }: PortfolioSettingsProps) {
             type="text"
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
+            maxLength={SUBTITLE_MAX_LENGTH + 10}
             placeholder="A short description of your work"
-            className="w-full bg-transparent border border-rule px-4 py-3 font-heading italic text-[15px] text-foreground placeholder:text-muted/40 focus:border-accent focus:outline-none transition-colors"
+            className={`w-full bg-transparent border px-4 py-3 font-heading italic text-[15px] text-foreground placeholder:text-muted/40 focus:outline-none transition-colors ${
+              subtitleOver
+                ? "border-red-400 focus:border-red-400"
+                : "border-rule focus:border-accent"
+            }`}
           />
+          <p
+            className={`text-[11px] mt-1.5 ${
+              subtitleOver ? "text-red-400" : subtitle.length > SUBTITLE_MAX_LENGTH - 10 ? "text-accent" : "text-muted/50"
+            }`}
+          >
+            {subtitle.length}/{SUBTITLE_MAX_LENGTH}
+          </p>
         </div>
 
         <div className="flex items-center gap-4">
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !canSave}
             className="inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-foreground border-b border-foreground pb-0.5 hover:text-accent hover:border-accent transition-colors disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save details"}
