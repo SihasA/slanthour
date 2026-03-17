@@ -25,6 +25,13 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // If an auth code landed on the home page (Supabase fallback), forward it to the callback route
+  if (request.nextUrl.pathname === "/" && request.nextUrl.searchParams.get("code")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/auth/callback";
+    return NextResponse.redirect(url);
+  }
+
   // Refresh the auth token — important for Server Components
   const {
     data: { user },
@@ -48,5 +55,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/", "/dashboard/:path*", "/login"],
 };
