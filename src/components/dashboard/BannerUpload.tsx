@@ -143,6 +143,7 @@ export function BannerUpload({
       cancelCrop();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save banner.");
+    } finally {
       setSaving(false);
     }
   }
