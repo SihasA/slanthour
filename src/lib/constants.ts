@@ -109,6 +109,14 @@ export const LAYOUT_THEMES: Record<LayoutTheme, LayoutThemeConfig> = {
   },
 };
 
+// ─── Theme access by tier ────────────────────────────────────
+import type { Tier } from "@/types";
+export const THEME_ACCESS: Record<LayoutTheme, Tier[]> = {
+  editorial: ["free", "pro", "studio"],
+  journal: ["pro", "studio"],
+  cinematic: ["pro", "studio"],
+};
+
 // ─── Portfolio field limits ─────────────────────────────────
 export const TITLE_MAX_LENGTH = 25;
 export const SUBTITLE_MAX_LENGTH = 90;

@@ -70,6 +70,7 @@ export default async function PortfolioEditorPage() {
           portfolioId={portfolio.id}
           userId={user.id}
           currentBannerUrl={portfolio.banner_url}
+          currentBannerCrop={(portfolio as Portfolio).banner_crop ?? null}
         />
       </section>
 

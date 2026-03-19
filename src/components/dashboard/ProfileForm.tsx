@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { RESERVED_SLUGS } from "@/lib/constants";
 import type { Profile } from "@/types";
@@ -21,6 +21,27 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
   const [error, setError] = useState("");
+
+  // Username change limit: free users can only change once per calendar month
+  const usernameChangeInfo = useMemo(() => {
+    if (profile.tier !== "free") return { locked: false, nextAvailable: null };
+    if (!profile.username_changed_at) return { locked: false, nextAvailable: null };
+
+    const changedAt = new Date(profile.username_changed_at);
+    const now = new Date();
+    const sameMonth =
+      changedAt.getFullYear() === now.getFullYear() &&
+      changedAt.getMonth() === now.getMonth();
+
+    if (!sameMonth) return { locked: false, nextAvailable: null };
+
+    // Next available: 1st of next month
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextStr = next.toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+    return { locked: true, nextAvailable: nextStr };
+  }, [profile.username_changed_at, profile.tier]);
+
+  const usernameChanged = form.username !== profile.username;
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -48,6 +69,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
     setSaving(true);
 
+    const isChangingUsername = form.username.trim().toLowerCase() !== profile.username;
+
     const supabase = createClient();
     const { error: updateError } = await supabase
       .from("profiles")
@@ -58,6 +81,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         email_public: form.email_public.trim() || null,
         instagram_handle: form.instagram_handle.replace(/^@/, "").trim() || null,
         website_url: form.website_url.trim() || null,
+        ...(isChangingUsername ? { username_changed_at: new Date().toISOString() } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", profile.id);
@@ -91,10 +115,21 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           value={form.username}
           onChange={(v) => update("username", v.toLowerCase())}
           required
+          disabled={usernameChangeInfo.locked}
         />
         <p className="text-[11px] text-muted mt-1.5">
           slanthour.com/{form.username || "..."}
         </p>
+        {usernameChangeInfo.locked && (
+          <p className="text-[11px] font-heading italic text-accent/70 mt-1">
+            Username already changed this month. Next change available: {usernameChangeInfo.nextAvailable}.
+          </p>
+        )}
+        {!usernameChangeInfo.locked && profile.tier === "free" && usernameChanged && (
+          <p className="text-[11px] font-heading italic text-muted/60 mt-1">
+            Free accounts can change username once per month.
+          </p>
+        )}
       </div>
 
       <div>
@@ -164,6 +199,7 @@ function Field({
   type = "text",
   placeholder,
   required,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -171,6 +207,7 @@ function Field({
   type?: string;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -183,7 +220,8 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className="w-full bg-transparent border border-rule rounded-none px-4 py-3 font-heading text-[15px] italic text-foreground placeholder:text-muted/40 focus:border-accent transition-colors"
+        disabled={disabled}
+        className="w-full bg-transparent border border-rule rounded-none px-4 py-3 font-heading text-[15px] italic text-foreground placeholder:text-muted/40 focus:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       />
     </div>
   );

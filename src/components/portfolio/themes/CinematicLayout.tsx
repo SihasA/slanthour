@@ -89,7 +89,16 @@ export function CinematicLayout({
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
+                  objectPosition: portfolio.banner_crop
+                    ? `${portfolio.banner_crop.x}% ${portfolio.banner_crop.y}%`
+                    : "center 50%",
                   display: "block",
+                  ...(portfolio.banner_crop && portfolio.banner_crop.zoom > 1
+                    ? {
+                        transform: `scale(${portfolio.banner_crop.zoom})`,
+                        transformOrigin: `${portfolio.banner_crop.x}% ${portfolio.banner_crop.y}%`,
+                      }
+                    : {}),
                 }}
                 draggable={false}
               />
@@ -138,7 +147,22 @@ export function CinematicLayout({
                 letterSpacing: "-0.02em",
               }}
             >
-              <CinematicTitle title={portfolio.title} />
+              {portfolio.title_line2 ? (
+                <>
+                  {portfolio.title}
+                  <br />
+                  <span
+                    style={{
+                      color: portfolio.title_line2_accent ? accent : "inherit",
+                      fontStyle: portfolio.title_line2_accent ? "italic" : "inherit",
+                    }}
+                  >
+                    {portfolio.title_line2}
+                  </span>
+                </>
+              ) : (
+                <CinematicTitle title={portfolio.title} />
+              )}
             </h1>
           </div>
 

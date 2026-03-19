@@ -12,14 +12,17 @@ interface PortfolioSettingsProps {
 export function PortfolioSettings({ portfolio }: PortfolioSettingsProps) {
   const [title, setTitle] = useState(portfolio.title);
   const [subtitle, setSubtitle] = useState(portfolio.subtitle ?? "");
+  const [titleLine2, setTitleLine2] = useState(portfolio.title_line2 ?? "");
+  const [titleLine2Accent, setTitleLine2Accent] = useState(portfolio.title_line2_accent ?? false);
   const [isPublished, setIsPublished] = useState(portfolio.is_published);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [publishSaving, setPublishSaving] = useState(false);
 
   const titleOver = title.length > TITLE_MAX_LENGTH;
+  const line2Over = titleLine2.length > TITLE_MAX_LENGTH;
   const subtitleOver = subtitle.length > SUBTITLE_MAX_LENGTH;
-  const canSave = !titleOver && !subtitleOver && title.trim().length > 0;
+  const canSave = !titleOver && !line2Over && !subtitleOver && title.trim().length > 0;
 
   async function handleSave() {
     if (!canSave) return;
@@ -32,6 +35,8 @@ export function PortfolioSettings({ portfolio }: PortfolioSettingsProps) {
       .update({
         title: title.trim() || "Untitled",
         subtitle: subtitle.trim() || null,
+        title_line2: titleLine2.trim() || null,
+        title_line2_accent: titleLine2Accent,
         updated_at: new Date().toISOString(),
       })
       .eq("id", portfolio.id);
@@ -66,7 +71,7 @@ export function PortfolioSettings({ portfolio }: PortfolioSettingsProps) {
       <div className="space-y-5 max-w-lg">
         <div>
           <label className="text-[9px] uppercase tracking-label text-accent block mb-2">
-            Title
+            Title — Line 1
           </label>
           <input
             type="text"
@@ -88,6 +93,49 @@ export function PortfolioSettings({ portfolio }: PortfolioSettingsProps) {
             {title.length}/{TITLE_MAX_LENGTH}
           </p>
         </div>
+
+        {/* Title line 2 — only show when line 1 is filled */}
+        {title.trim().length > 0 && (
+          <div>
+            <label className="text-[9px] uppercase tracking-label text-accent block mb-2">
+              Title — Line 2 <span className="text-muted/50 normal-case">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={titleLine2}
+              onChange={(e) => setTitleLine2(e.target.value)}
+              maxLength={TITLE_MAX_LENGTH + 5}
+              placeholder="Second line of title"
+              className={`w-full bg-transparent border px-4 py-3 font-heading italic text-[15px] text-foreground placeholder:text-muted/40 focus:outline-none transition-colors ${
+                line2Over
+                  ? "border-red-400 focus:border-red-400"
+                  : "border-rule focus:border-accent"
+              }`}
+            />
+            <div className="flex items-center justify-between mt-1.5">
+              <p
+                className={`text-[11px] ${
+                  line2Over ? "text-red-400" : titleLine2.length > TITLE_MAX_LENGTH - 5 ? "text-accent" : "text-muted/50"
+                }`}
+              >
+                {titleLine2.length}/{TITLE_MAX_LENGTH}
+              </p>
+              {titleLine2.trim().length > 0 && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={titleLine2Accent}
+                    onChange={(e) => setTitleLine2Accent(e.target.checked)}
+                    className="accent-accent w-3 h-3"
+                  />
+                  <span className="text-[9px] uppercase tracking-label text-muted">
+                    Accent colour + italic
+                  </span>
+                </label>
+              )}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="text-[9px] uppercase tracking-label text-accent block mb-2">

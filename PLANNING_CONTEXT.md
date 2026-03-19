@@ -97,19 +97,6 @@ slanthour/
 
 ---
 
-## What's not done yet
-
-- [ ] 9 more photos to upload (targeting ~24 total)
-- [ ] Photo filenames are currently `XT5Album1 N.jpg` — not ideal (spaces in names)
-- [ ] Photos aren't curated/ordered — currently sorted alphabetically by filename
-- [ ] `scan.js` only handles `sihas-abeywickrama/` — not yet multi-photographer
-- [ ] Two repos to keep in sync manually (`slanthour` + `sihas-portfolio`) — could consolidate
-- [ ] No analytics (no idea how much traffic the site gets)
-- [ ] No prints/contact flow beyond the email link
-- [ ] Hub page has two placeholder cards that go nowhere
-
----
-
 ## The vision / what I'm planning
 
 **Short term:** Get the portfolio genuinely finished (all photos, good ordering, maybe some caption/series context).

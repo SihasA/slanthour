@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import type { Profile, Portfolio, Theme } from "@/types";
+
+// Convert #rrggbb to "r,g,b" for use in rgba()
+function hexToRgbStr(hex: string): string {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return "10,9,8";
+  return `${r},${g},${b}`;
+}
 import { ThemeHeader } from "../ThemeHeader";
 import { CopyProtection } from "../CopyProtection";
 import { Lightbox } from "../Lightbox";
@@ -84,8 +94,16 @@ export function EditorialLayout({
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                objectPosition: "center 40%",
+                objectPosition: portfolio.banner_crop
+                  ? `${portfolio.banner_crop.x}% ${portfolio.banner_crop.y}%`
+                  : "center 40%",
                 display: "block",
+                ...(portfolio.banner_crop && portfolio.banner_crop.zoom > 1
+                  ? {
+                      transform: `scale(${portfolio.banner_crop.zoom})`,
+                      transformOrigin: `${portfolio.banner_crop.x}% ${portfolio.banner_crop.y}%`,
+                    }
+                  : {}),
               }}
               draggable={false}
             />
@@ -94,7 +112,7 @@ export function EditorialLayout({
               style={{
                 position: "absolute",
                 inset: 0,
-                background: `linear-gradient(to top, ${bg} 0%, rgba(10,9,8,0.85) 15%, rgba(10,9,8,0.3) 40%, rgba(10,9,8,0.1) 60%, transparent 100%)`,
+                background: `linear-gradient(to top, ${bg} 0%, rgba(${hexToRgbStr(bg)},0.85) 15%, rgba(${hexToRgbStr(bg)},0.3) 40%, rgba(${hexToRgbStr(bg)},0.1) 60%, transparent 100%)`,
               }}
             />
             <div
@@ -109,10 +127,9 @@ export function EditorialLayout({
                   fontStyle: "italic",
                   lineHeight: 1.1,
                   color: text,
-                  whiteSpace: "nowrap",
                 }}
               >
-                {portfolio.title}
+                <EditorialTitleLines portfolio={portfolio} accent={accent} />
               </h1>
               {portfolio.subtitle && (
                 <p
@@ -151,10 +168,9 @@ export function EditorialLayout({
                   fontStyle: "italic",
                   lineHeight: 1.1,
                   color: text,
-                  whiteSpace: "nowrap",
                 }}
               >
-                {portfolio.title}
+                <EditorialTitleLines portfolio={portfolio} accent={accent} />
               </h1>
               {portfolio.subtitle && (
                 <p
@@ -176,28 +192,9 @@ export function EditorialLayout({
           </section>
         )}
 
-        {/* Photo count + divider */}
-        {photos.length > 0 && (
-          <div id="work" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 40px" }}>
-            <div
-              style={{
-                textAlign: "center",
-                padding: "2.5rem 0 1rem",
-                fontSize: "0.7rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.15em",
-                color: muted,
-              }}
-            >
-              {photos.length} photograph{photos.length !== 1 ? "s" : ""}
-            </div>
-            <div style={{ height: 1, background: border }} />
-          </div>
-        )}
-
         {/* Photo grid — 3-col square */}
         {photos.length > 0 && (
-          <div className="grid-wrap" style={{ maxWidth: 1200, margin: "1.5rem auto", padding: "0 40px 120px" }}>
+          <div id="work" className="grid-wrap" style={{ maxWidth: 1200, margin: "2.5rem auto 0", padding: "0 40px 120px" }}>
             <div
               style={{
                 display: "grid",
@@ -275,6 +272,27 @@ export function EditorialLayout({
   );
 }
 
+// ─── Two-line title helper ───────────────────────────────────
+
+function EditorialTitleLines({ portfolio, accent }: { portfolio: Portfolio; accent: string }) {
+  const { title, title_line2, title_line2_accent } = portfolio;
+  if (!title_line2) return <>{title}</>;
+  return (
+    <>
+      {title}
+      <br />
+      <span
+        style={{
+          color: title_line2_accent ? accent : "inherit",
+          fontStyle: title_line2_accent ? "italic" : "inherit",
+        }}
+      >
+        {title_line2}
+      </span>
+    </>
+  );
+}
+
 // ─── Grid item ───────────────────────────────────────────────
 
 function EditorialGridItem({
@@ -326,7 +344,7 @@ function EditorialGridItem({
         style={{
           position: "absolute",
           inset: 0,
-          background: hovered ? `rgba(10,9,8,0.15)` : "transparent",
+          background: hovered ? `rgba(${hexToRgbStr(bg)},0.15)` : "transparent",
           transition: "background 0.3s",
           pointerEvents: "none",
         }}

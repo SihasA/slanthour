@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { LAYOUT_THEMES } from "@/lib/constants";
-import type { LayoutTheme } from "@/types";
+import { LAYOUT_THEMES, THEME_ACCESS } from "@/lib/constants";
+import type { LayoutTheme, Tier } from "@/types";
 
 interface ThemePickerProps {
   currentTheme: LayoutTheme;
   userId: string;
+  tier: Tier;
   onThemeChange: (newTheme: LayoutTheme) => void;
 }
 
@@ -16,14 +17,24 @@ const THEME_IDS: LayoutTheme[] = ["editorial", "journal", "cinematic"];
 export function ThemePicker({
   currentTheme,
   userId,
+  tier,
   onThemeChange,
 }: ThemePickerProps) {
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState<LayoutTheme | null>(null);
+  const [showUpgradeFor, setShowUpgradeFor] = useState<LayoutTheme | null>(null);
   const [justSwitched, setJustSwitched] = useState<LayoutTheme | null>(null);
+
+  function isLocked(id: LayoutTheme): boolean {
+    return !THEME_ACCESS[id].includes(tier);
+  }
 
   async function handleSwitch(newTheme: LayoutTheme) {
     if (newTheme === currentTheme) return;
+    if (isLocked(newTheme)) {
+      setShowUpgradeFor(newTheme);
+      return;
+    }
     setShowConfirm(newTheme);
   }
 
@@ -65,6 +76,7 @@ export function ThemePicker({
         {THEME_IDS.map((id) => {
           const t = LAYOUT_THEMES[id];
           const isActive = id === currentTheme;
+          const locked = isLocked(id);
 
           return (
             <button
@@ -75,7 +87,9 @@ export function ThemePicker({
               className={`relative flex items-start gap-4 p-4 border text-left transition-all duration-200 ${
                 isActive
                   ? "border-accent bg-accent/[0.06]"
-                  : "border-rule hover:border-muted hover:bg-surface"
+                  : locked
+                    ? "border-rule opacity-60 hover:opacity-80"
+                    : "border-rule hover:border-muted hover:bg-surface"
               }`}
             >
               {/* Active indicator bar */}
@@ -105,6 +119,11 @@ export function ThemePicker({
                       Active
                     </span>
                   )}
+                  {locked && (
+                    <span className="text-[8px] uppercase tracking-widest text-accent/70 font-body border border-accent/30 px-1.5 py-0.5">
+                      PRO
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
                   {t.description}
@@ -123,6 +142,38 @@ export function ThemePicker({
         <p className="text-[11px] font-heading italic text-accent mt-3 transition-opacity">
           Switched to {LAYOUT_THEMES[justSwitched].label}. Your portfolio has been updated.
         </p>
+      )}
+
+      {/* Upgrade prompt modal */}
+      {showUpgradeFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface border border-rule p-6 max-w-sm mx-4">
+            <p className="text-[9px] uppercase tracking-label text-accent mb-3">
+              Pro feature
+            </p>
+            <p className="font-heading italic text-foreground text-lg mb-3">
+              {LAYOUT_THEMES[showUpgradeFor].label} is a Pro theme
+            </p>
+            <p className="text-[12px] text-muted leading-relaxed mb-6">
+              Upgrade to Pro to unlock {LAYOUT_THEMES[showUpgradeFor].label} and all future themes.
+              Pro is £6.99/month.
+            </p>
+            <div className="flex items-center gap-4">
+              <a
+                href="mailto:hello@slanthour.com?subject=Pro upgrade"
+                className="text-[10px] uppercase tracking-wide text-foreground border-b border-foreground pb-0.5 hover:text-accent hover:border-accent transition-colors"
+              >
+                Contact us to upgrade
+              </a>
+              <button
+                onClick={() => setShowUpgradeFor(null)}
+                className="text-[10px] uppercase tracking-wide text-muted hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Confirmation dialog */}

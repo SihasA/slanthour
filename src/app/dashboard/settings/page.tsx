@@ -44,7 +44,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* Theme: layout picker + customize (colours/fonts) */}
-      <ThemeSettings initialTheme={theme as Theme} />
+      <ThemeSettings initialTheme={theme as Theme} tier={(profile as Profile).tier} />
     </div>
   );
 }

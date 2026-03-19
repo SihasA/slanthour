@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { ThemePicker } from "./ThemePicker";
 import { ThemeForm } from "./ThemeForm";
-import type { Theme, LayoutTheme } from "@/types";
+import type { Theme, LayoutTheme, Tier } from "@/types";
 import { LAYOUT_THEMES } from "@/lib/constants";
 
 interface ThemeSettingsProps {
   initialTheme: Theme;
+  tier: Tier;
 }
 
-export function ThemeSettings({ initialTheme }: ThemeSettingsProps) {
+export function ThemeSettings({ initialTheme, tier }: ThemeSettingsProps) {
   const [theme, setTheme] = useState(initialTheme);
 
   function handleThemeChange(newLayout: LayoutTheme) {
@@ -38,6 +39,7 @@ export function ThemeSettings({ initialTheme }: ThemeSettingsProps) {
         <ThemePicker
           currentTheme={theme.layout_theme}
           userId={theme.user_id}
+          tier={tier}
           onThemeChange={handleThemeChange}
         />
       </section>

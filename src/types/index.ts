@@ -13,6 +13,7 @@ export interface Profile {
   website_url: string | null;
   avatar_url: string | null;
   tier: Tier;
+  username_changed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -29,12 +30,21 @@ export interface Theme {
   layout_theme: LayoutTheme;
 }
 
+export interface BannerCrop {
+  zoom: number;
+  x: number;
+  y: number;
+}
+
 export interface Portfolio {
   id: string;
   user_id: string;
   title: string;
   subtitle: string | null;
   banner_url: string | null;
+  banner_crop: BannerCrop | null;
+  title_line2: string | null;
+  title_line2_accent: boolean;
   is_published: boolean;
   created_at: string;
   updated_at: string;
