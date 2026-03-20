@@ -1,6 +1,3 @@
-<!-- REPLACE THIS FILE with your exported favicon from Figma -->
-<!-- Export spec: SVG, 32×32 artboard, icon/mark only, transparent background -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <circle cx="16" cy="16" r="14" fill="#FF6B00"/>
-  <text x="16" y="21" font-size="13" fill="#2A2424" text-anchor="middle" font-family="serif" font-style="italic" font-weight="bold">S</text>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M32 32H6.95898L24.5732 17.5449L21.7119 14.0586L26.7227 9.88477L23.1074 5.5459L14.9365 12.3535L12.4746 9.35352L0 19.5898V0H32V32Z" fill="#FF6B00"/>
 </svg>
