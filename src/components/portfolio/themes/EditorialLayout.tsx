@@ -112,7 +112,7 @@ export function EditorialLayout({
               style={{
                 position: "absolute",
                 inset: 0,
-                background: `linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)`,
+                background: `linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 40%, rgba(${hexToRgbStr(bg)},0.55) 80%, ${bg} 100%)`,
               }}
             />
             <div

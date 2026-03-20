@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { createClient } from "@/lib/supabase/client";
-import { compressImage, generateBannerPath } from "@/lib/image";
+import { compressImage } from "@/lib/image";
 import {
   PHOTO_ACCEPTED_TYPES,
   BANNER_MAX_DIMENSION,
@@ -17,6 +17,23 @@ interface BannerUploadProps {
   userId: string;
   currentBannerUrl: string | null;
   currentBannerCrop: BannerCrop | null;
+}
+
+/**
+ * Extract the Supabase storage path from a public banner URL.
+ * URL shape: https://<ref>.supabase.co/storage/v1/object/public/portfolios/<path>
+ * Works regardless of trailing query params (?t=...).
+ */
+function extractBannerPath(url: string): string | null {
+  try {
+    const pathname = new URL(url).pathname;
+    const marker = "/object/public/portfolios/";
+    const idx = pathname.indexOf(marker);
+    if (idx === -1) return null;
+    return pathname.slice(idx + marker.length);
+  } catch {
+    return null;
+  }
 }
 
 export function BannerUpload({
@@ -99,22 +116,26 @@ export function BannerUpload({
       const supabase = createClient();
 
       if (cropFile) {
-        // New file: compress and upload
+        // New file: compress and upload to a unique timestamped path so the
+        // DB always receives a fresh URL — prevents CDN/browser cache from
+        // serving the old image on page refresh (same-path upsert kept the
+        // URL identical, so browsers served the cached version even after a
+        // new image was stored).
         const { blob } = await compressImage(cropFile, {
           maxDimension: BANNER_MAX_DIMENSION,
           quality: BANNER_QUALITY,
         });
 
-        const path = generateBannerPath(userId);
+        const newPath = `${userId}/banner-${Date.now()}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from("portfolios")
-          .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+          .upload(newPath, blob, { contentType: "image/jpeg" });
 
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage
           .from("portfolios")
-          .getPublicUrl(path);
+          .getPublicUrl(newPath);
 
         const { error: updateError } = await supabase
           .from("portfolios")
@@ -127,7 +148,16 @@ export function BannerUpload({
 
         if (updateError) throw updateError;
 
-        setBannerUrl(`${urlData.publicUrl}?t=${Date.now()}`);
+        // Delete the previous banner file after the DB points to the new one.
+        // Fire-and-forget — a stale file in storage is harmless.
+        if (bannerUrl) {
+          const oldPath = extractBannerPath(bannerUrl);
+          if (oldPath) {
+            supabase.storage.from("portfolios").remove([oldPath]).catch(() => {});
+          }
+        }
+
+        setBannerUrl(urlData.publicUrl);
       } else {
         // Repositioning only — no new upload
         const { error: updateError } = await supabase
@@ -156,9 +186,15 @@ export function BannerUpload({
 
     try {
       const supabase = createClient();
-      const path = generateBannerPath(userId);
 
-      await supabase.storage.from("portfolios").remove([path]);
+      // Extract the real storage path from the current URL (the path may be
+      // timestamped for banners uploaded after the unique-path fix).
+      if (bannerUrl) {
+        const path = extractBannerPath(bannerUrl);
+        if (path) {
+          await supabase.storage.from("portfolios").remove([path]);
+        }
+      }
 
       const { error: updateError } = await supabase
         .from("portfolios")
