@@ -66,7 +66,7 @@ export default function AuthPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <Link href="/" className="block mb-16 flex justify-center">
-          <img src="/brand/wordmark.svg" alt="Slant Hour" className="h-8 w-auto" />
+          <img src="/brand/login-logo.svg" alt="Slant Hour" className="h-20 w-auto" />
         </Link>
 
         {/* Title */}

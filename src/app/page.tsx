@@ -5,7 +5,7 @@ export default function LandingPage() {
     <div className="min-h-screen">
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-5 md:px-12 bg-background/90 backdrop-blur-md border-b border-transparent hover:border-rule transition-colors duration-300">
-        <img src="/brand/wordmark.svg" alt="Slant Hour" className="h-7 w-auto" />
+        <img src="/brand/logo-light.svg" alt="Slant Hour" className="h-8 w-auto" />
         <nav className="flex items-center gap-6 md:gap-8">
           <a
             href="#how-it-works"
@@ -170,7 +170,7 @@ export default function LandingPage() {
 
       {/* ── Footer ──────────────────────────────────────────── */}
       <footer className="border-t border-rule px-6 md:px-12 py-7 flex flex-col md:flex-row justify-between items-center gap-3">
-        <img src="/brand/wordmark.svg" alt="Slant Hour" className="h-6 w-auto opacity-50" />
+        <img src="/brand/logo-light.svg" alt="Slant Hour" className="h-6 w-auto opacity-50" />
         <span className="text-[9px] tracking-wide text-muted/50">
           &copy; 2026 &middot; All rights reserved
         </span>

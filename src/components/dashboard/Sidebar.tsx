@@ -25,7 +25,7 @@ export function Sidebar({ displayName, username, email }: SidebarProps) {
       <aside className="hidden md:flex flex-col w-56 min-h-screen border-r border-rule px-6 py-8 fixed left-0 top-0">
         {/* Logo */}
         <Link href="/" className="mb-12 block">
-          <img src="/brand/wordmark.svg" alt="Slant Hour" className="h-7 w-auto" />
+          <img src="/brand/logo-light.svg" alt="Slant Hour" className="h-7 w-auto" />
         </Link>
 
         {/* Nav */}
@@ -69,7 +69,7 @@ export function Sidebar({ displayName, username, email }: SidebarProps) {
       {/* Mobile header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background/90 backdrop-blur-md border-b border-rule">
         <Link href="/" className="block">
-          <img src="/brand/wordmark.svg" alt="Slant Hour" className="h-7 w-auto" />
+          <img src="/brand/logo-light.svg" alt="Slant Hour" className="h-7 w-auto" />
         </Link>
         <nav className="flex items-center gap-5">
           {NAV_ITEMS.map((item) => {
