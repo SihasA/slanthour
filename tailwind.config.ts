@@ -15,6 +15,7 @@ const config: Config = {
       fontFamily: {
         heading: ["var(--font-cormorant)", "serif"],
         body: ["var(--font-dm-mono)", "monospace"],
+        copy: ["var(--font-inter)", "sans-serif"],
       },
       letterSpacing: {
         label: "0.25em",

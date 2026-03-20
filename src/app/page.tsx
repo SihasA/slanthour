@@ -38,7 +38,7 @@ export default function LandingPage() {
           <br />
           <em className="text-muted">best work.</em>
         </h1>
-        <p className="font-heading text-lg md:text-xl italic text-muted max-w-[480px] leading-relaxed mb-12">
+        <p className="font-copy text-lg md:text-xl text-muted max-w-[480px] leading-relaxed mb-12">
           Slant Hour is a curated portfolio platform for photographers and
           visual creatives. Your top form, presented beautifully — not buried in
           a feed.
@@ -65,7 +65,7 @@ export default function LandingPage() {
               <h3 className="font-heading text-2xl font-light italic text-foreground mb-3">
                 Sign up
               </h3>
-              <p className="font-heading text-[15px] italic text-muted leading-relaxed">
+              <p className="font-copy text-base text-muted leading-relaxed">
                 Create your free account in seconds. Sign up with Google or
                 email — no invite needed.
               </p>
@@ -79,7 +79,7 @@ export default function LandingPage() {
               <h3 className="font-heading text-2xl font-light italic text-foreground mb-3">
                 Upload your work
               </h3>
-              <p className="font-heading text-[15px] italic text-muted leading-relaxed">
+              <p className="font-copy text-base text-muted leading-relaxed">
                 Drag, drop, arrange. Choose your theme, set your banner, write
                 your bio. Your portfolio is ready in minutes.
               </p>
@@ -93,7 +93,7 @@ export default function LandingPage() {
               <h3 className="font-heading text-2xl font-light italic text-foreground mb-3">
                 Share your link
               </h3>
-              <p className="font-heading text-[15px] italic text-muted leading-relaxed">
+              <p className="font-copy text-base text-muted leading-relaxed">
                 Your portfolio lives at slanthour.com/your-name — a clean,
                 permanent link that shows only your best photographs.
               </p>
@@ -110,7 +110,7 @@ export default function LandingPage() {
             <h2 className="font-heading text-[clamp(32px,5vw,40px)] font-light italic leading-tight text-foreground mb-5">
               Showcase your work, your way.
             </h2>
-            <p className="font-heading text-[17px] text-muted leading-loose">
+            <p className="font-copy text-[17px] text-muted leading-loose">
               Slant Hour is for photographers, filmmakers, and designers who
               want a home for their work without the noise of social media. Each
               portfolio is independent, personal, and built to feel like a book —
@@ -147,7 +147,7 @@ export default function LandingPage() {
             <h2 className="font-heading text-[clamp(32px,5vw,40px)] font-light italic leading-tight text-foreground mb-4">
               Build your portfolio today.
             </h2>
-            <p className="font-heading text-[17px] italic text-muted leading-loose">
+            <p className="font-copy text-[17px] text-muted leading-loose">
               Sign up for free and have your portfolio live in minutes.
               No waitlist, no invite codes — just your best work, beautifully
               presented.
@@ -161,7 +161,7 @@ export default function LandingPage() {
             >
               Create your portfolio <span className="text-sm">&rarr;</span>
             </Link>
-            <p className="font-heading text-[13px] italic text-muted/60">
+            <p className="font-copy text-sm text-muted/60">
               Free to use &middot; No credit card required
             </p>
           </div>
@@ -187,7 +187,7 @@ function Feature({ label, text }: { label: string; text: string }) {
       <p className="text-[9px] uppercase tracking-label text-accent mb-2">
         {label}
       </p>
-      <p className="font-heading text-[15px] italic text-muted leading-relaxed">
+      <p className="font-copy text-base text-muted leading-relaxed">
         {text}
       </p>
     </div>

@@ -73,7 +73,7 @@ export default function AuthPage() {
         <h1 className="font-heading text-3xl font-light italic text-foreground mb-2 text-center">
           {mode === "signin" ? "Welcome back." : "Create your portfolio."}
         </h1>
-        <p className="font-heading text-sm italic text-muted text-center mb-10">
+        <p className="font-copy text-sm text-muted text-center mb-10">
           {mode === "signin"
             ? "Sign in to manage your portfolio."
             : "Get started with Slant Hour."}
@@ -183,7 +183,7 @@ export default function AuthPage() {
         </form>
 
         {/* Toggle */}
-        <p className="font-heading text-[13px] italic text-muted/60 text-center mt-8">
+        <p className="font-copy text-sm text-muted/60 text-center mt-8">
           {mode === "signin" ? (
             <>
               Don&apos;t have an account?{" "}
