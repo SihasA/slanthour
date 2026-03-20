@@ -62,9 +62,7 @@ export const metadata: Metadata = {
     "A curated portfolio platform for photographers and visual creatives. No algorithm, no noise — just your best photographs, presented beautifully.",
   icons: {
     icon: "/favicon.svg",
-    apple: "/apple-touch-icon.png",
   },
-  manifest: "/site.webmanifest",
   openGraph: {
     title: "Slant Hour",
     description:
