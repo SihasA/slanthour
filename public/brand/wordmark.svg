@@ -1,0 +1,6 @@
+<!-- REPLACE THIS FILE with your wordmark export from Figma -->
+<!-- Export spec: SVG, wide artboard (e.g. 400×80), logotype/wordmark only ("Slant Hour" text), TRANSPARENT background -->
+<!-- Used at: landing page header, dashboard sidebar, footer -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80">
+  <text x="0" y="60" font-size="52" fill="#2A2424" font-family="serif" font-style="italic" font-weight="300">Slant Hour</text>
+</svg>

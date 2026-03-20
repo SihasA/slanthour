@@ -60,6 +60,11 @@ export const metadata: Metadata = {
   title: "Slant Hour — A home for your best work",
   description:
     "A curated portfolio platform for photographers and visual creatives. No algorithm, no noise — just your best photographs, presented beautifully.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
     title: "Slant Hour",
     description:
@@ -67,6 +72,14 @@ export const metadata: Metadata = {
     url: "https://slanthour.com",
     siteName: "Slant Hour",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Slant Hour",
+    description:
+      "A curated portfolio platform for photographers and visual creatives.",
+    images: ["/og-image.png"],
   },
 };
 

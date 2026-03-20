@@ -1,0 +1,9 @@
+<!-- REPLACE THIS FILE with your full logo export from Figma — FOR LIGHT BACKGROUNDS -->
+<!-- Export spec: SVG, square or wide artboard (e.g. 200×200 or 400×160), icon + wordmark together, TRANSPARENT background -->
+<!-- Logo colour: use #FF6B00 (orange) for the mark, wordmark in #2A2424 (grey) -->
+<!-- Used at: light-mode sidebar, landing page, light-themed portfolio headers -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <circle cx="100" cy="80" r="45" fill="#FF6B00"/>
+  <text x="100" y="98" font-size="48" fill="#2A2424" text-anchor="middle" font-family="serif" font-style="italic" font-weight="bold">S</text>
+  <text x="100" y="150" font-size="24" fill="#2A2424" text-anchor="middle" font-family="serif" font-style="italic" font-weight="300">Slant Hour</text>
+</svg>

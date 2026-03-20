@@ -1,0 +1,7 @@
+<!-- REPLACE THIS FILE with your logomark export from Figma -->
+<!-- Export spec: SVG, square artboard (e.g. 100×100), icon/mark only, TRANSPARENT background -->
+<!-- Used at: sidebar logo area, login page, small UI spots -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="45" fill="#FF6B00"/>
+  <text x="50" y="68" font-size="48" fill="#2A2424" text-anchor="middle" font-family="serif" font-style="italic" font-weight="bold">S</text>
+</svg>
