@@ -105,12 +105,38 @@ export function BannerUpload({
     setSaving(true);
     setError(null);
 
-    // Convert croppedArea (percentage of full image) to focal point for object-position
-    const newCropData: BannerCrop = {
-      zoom,
-      x: latestCroppedArea.x + latestCroppedArea.width / 2,
-      y: latestCroppedArea.y + latestCroppedArea.height / 2,
-    };
+    // Convert react-easy-crop's croppedArea to CSS object-position percentages.
+    //
+    // The WRONG approach (previous code) was saving the crop's centre pixel as
+    // a percentage of the image, then using that as object-position. e.g. for a
+    // crop anchored at the top, croppedArea.y = 0 but centre.y = ~42%, so
+    // object-position: 42% puts the image at the middle — not the top.
+    //
+    // The CORRECT formula is the CSS background-position / object-position spec:
+    //
+    //   pX = cropLeft / (1 − cropWidth)
+    //   pY = cropTop  / (1 − cropHeight)          (values as fractions, ×100 for %)
+    //
+    // This maps:  crop at top    → pY = 0%
+    //             crop at centre → pY = 50%
+    //             crop at bottom → pY = 100%
+    //
+    // …and it works correctly for any display container aspect ratio, because
+    // it encodes the crop's position within the image's "adjustable range" for
+    // object-fit: cover — not an absolute pixel position.
+    //
+    // Guard against ÷0 when the crop fills 100% of an axis (no movement possible).
+    const { x, y, width, height } = latestCroppedArea;
+    const pX =
+      width >= 99.9
+        ? 50
+        : Math.max(0, Math.min(100, (x / (100 - width)) * 100));
+    const pY =
+      height >= 99.9
+        ? 50
+        : Math.max(0, Math.min(100, (y / (100 - height)) * 100));
+
+    const newCropData: BannerCrop = { zoom, x: pX, y: pY };
 
     try {
       const supabase = createClient();
