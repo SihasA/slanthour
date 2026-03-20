@@ -8,7 +8,7 @@ const config: Config = {
         background: "#0a0908",
         foreground: "#e8e4df",
         muted: "#6b6760",
-        accent: "#9c8e7a",
+        accent: "#FF6B00",
         rule: "#1f1e1d",
         surface: "#141312",
       },
