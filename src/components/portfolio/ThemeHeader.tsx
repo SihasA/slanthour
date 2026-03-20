@@ -127,8 +127,11 @@ export function ThemeHeader({
               : "transparent",
         backdropFilter: variant === "editorial" && isOverBanner ? "none" : "blur(16px)",
         WebkitBackdropFilter: variant === "editorial" && isOverBanner ? "none" : "blur(16px)",
-        borderBottom: `1px solid ${scrolled && !isOverBanner ? ruleColor : "transparent"}`,
-        transition: "background 0.3s ease, border-color 0.3s ease",
+        // Use box-shadow instead of border-bottom so there is zero paint boundary
+        // when transparent — a 1px solid transparent border still composites as a
+        // hairline on GPU layers (visible against the bright banner image).
+        boxShadow: scrolled && !isOverBanner ? `0 1px 0 ${ruleColor}` : "none",
+        transition: "background 0.3s ease, box-shadow 0.3s ease",
       }}
     >
       <a

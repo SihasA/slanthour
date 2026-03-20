@@ -50,7 +50,9 @@ export function BannerUpload({
     setCropFile(file);
     setCrop({ x: 0, y: 0 });
     setZoom(bannerCrop?.zoom ?? 1);
-    setLatestCroppedArea(null);
+    // Seed a valid default so the save button is never permanently disabled.
+    // react-easy-crop will overwrite this with the real area once the image loads.
+    setLatestCroppedArea({ x: 0, y: 0, width: 100, height: 100 });
     setCropMode("editing");
     setError(null);
   }
