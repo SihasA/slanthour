@@ -107,12 +107,12 @@ export function EditorialLayout({
               }}
               draggable={false}
             />
-            {/* Strong gradient: solid at bottom, fading up */}
+            {/* Gradient overlay — matches legacy: subtle top darkening + stronger bottom for text readability */}
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                background: `linear-gradient(to top, ${bg} 0%, rgba(${hexToRgbStr(bg)},0.85) 15%, rgba(${hexToRgbStr(bg)},0.3) 40%, rgba(${hexToRgbStr(bg)},0.1) 60%, transparent 100%)`,
+                background: `linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)`,
               }}
             />
             <div
