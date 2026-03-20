@@ -69,8 +69,9 @@ Everything except the OG image and app icons. Your logo assets live on the page 
 - **What:** Full logo — icon + wordmark together, for DARK backgrounds
 - **Artboard:** Same dimensions as logo-light.svg
 - **Background:** Transparent
-- **Colours:** Icon in `#FF6B00`, wordmark in `#FFFFFF` (white)
+- **Colours:** Icon in `#FF6B00`, wordmark in `#FF6B00` (orange — same as light version)
 - **Used at:** Dark-mode pages, dark portfolio themes, email footers
+- **Note:** Orange reads well on both light and dark — no need for a white variant
 - **Figma export:** File → Export → SVG
 
 ---
