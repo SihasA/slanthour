@@ -7,7 +7,7 @@ const config: Config = {
       colors: {
         background: "#0a0908",
         foreground: "#e8e4df",
-        muted: "#6b6760",
+        muted: "#9c9894",
         accent: "#FF6B00",
         rule: "#1f1e1d",
         surface: "#141312",

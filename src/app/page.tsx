@@ -59,7 +59,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
             {/* Step 1 */}
             <div>
-              <span className="font-heading text-5xl font-light italic text-rule block mb-4">
+              <span className="font-heading text-5xl font-light italic text-accent block mb-4">
                 01
               </span>
               <h3 className="font-heading text-2xl font-light italic text-foreground mb-3">
@@ -73,7 +73,7 @@ export default function LandingPage() {
 
             {/* Step 2 */}
             <div>
-              <span className="font-heading text-5xl font-light italic text-rule block mb-4">
+              <span className="font-heading text-5xl font-light italic text-accent block mb-4">
                 02
               </span>
               <h3 className="font-heading text-2xl font-light italic text-foreground mb-3">
@@ -87,7 +87,7 @@ export default function LandingPage() {
 
             {/* Step 3 */}
             <div>
-              <span className="font-heading text-5xl font-light italic text-rule block mb-4">
+              <span className="font-heading text-5xl font-light italic text-accent block mb-4">
                 03
               </span>
               <h3 className="font-heading text-2xl font-light italic text-foreground mb-3">
