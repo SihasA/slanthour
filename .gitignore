@@ -28,3 +28,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code local settings (contains secrets — never commit)
+.claude/settings.local.json
+.claude/worktrees/
