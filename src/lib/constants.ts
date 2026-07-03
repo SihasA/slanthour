@@ -141,22 +141,57 @@ export const TIER_LIMITS = {
 } as const;
 
 // ─── Reserved slugs ─────────────────────────────────────────
+// Blocked as usernames AND page slugs — they collide with (or could be
+// confused with) application routes.
 export const RESERVED_SLUGS = [
   "login",
   "signup",
+  "logout",
+  "forgot-password",
+  "reset-password",
   "dashboard",
   "settings",
+  "editor",
+  "pages",
+  "page",
+  "pricing",
   "admin",
   "api",
+  "app",
+  "auth",
   "about",
   "contact",
   "terms",
   "privacy",
+  "legal",
   "blog",
   "help",
+  "support",
+  "docs",
   "explore",
   "search",
   "new",
   "edit",
   "delete",
+  "media",
+  "assets",
+  "static",
+  "public",
+  "demo",
+  "slanthour",
+  "arborai",
+  "arbor",
+  "brand",
+  "legacy",
 ] as const;
+
+// ─── Media pipeline ─────────────────────────────────────────
+// Responsive variants generated client-side (canvas re-encode, which also
+// strips EXIF/GPS) and validated server-side before storage.
+export const MEDIA_VARIANTS = {
+  lg: { maxDimension: 2000, quality: 0.82 },
+  md: { maxDimension: 1000, quality: 0.78 },
+  sm: { maxDimension: 480, quality: 0.72 },
+} as const;
+export const MEDIA_BLUR_DIMENSION = 16;
+export const MEDIA_BUCKET = "portfolios"; // historical bucket name, kept for data continuity

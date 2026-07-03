@@ -43,7 +43,6 @@ export default function LandingPage() {
           visual creatives. Your top form, presented beautifully — not buried in
           a feed.
         </p>
-        <div className="w-px h-12 bg-accent/50" />
       </section>
 
       {/* ── How It Works ────────────────────────────────────── */}

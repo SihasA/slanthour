@@ -1,7 +1,43 @@
 // ─── Database row types ───────────────────────────────────────
 
+import type { PageDocument, PublishedSnapshot } from "@/lib/page-document";
+
 export type Tier = "free" | "pro" | "studio";
 export type LayoutTheme = "editorial" | "journal" | "cinematic";
+export type ThemeId = "monograph" | "roll36" | "keepsake" | "afterdark" | "cabinet";
+export type Visibility = "public" | "unlisted" | "password";
+
+export interface Page {
+  id: string;
+  user_id: string;
+  slug: string;
+  title: string;
+  theme: ThemeId;
+  theme_settings: Record<string, unknown>;
+  draft: PageDocument;
+  draft_rev: number;
+  published: PublishedSnapshot | null;
+  published_at: string | null;
+  is_published: boolean;
+  visibility: Visibility;
+  password_hash: string | null;
+  cover_path: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MediaAsset {
+  id: string;
+  user_id: string;
+  storage_path: string;
+  has_variants: boolean;
+  filename: string;
+  width: number | null;
+  height: number | null;
+  blur_data_url: string | null;
+  size_bytes: number | null;
+  created_at: string;
+}
 
 export interface Profile {
   id: string;
