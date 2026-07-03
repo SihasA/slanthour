@@ -6,6 +6,7 @@ import {
   Inter,
   Space_Grotesk,
   IBM_Plex_Mono,
+  Caveat,
 } from "next/font/google";
 import "./globals.css";
 
@@ -56,6 +57,14 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// ─── Keepsake annotation font ────────────────────────────────
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  variable: "--font-caveat",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Slant Hour — A home for your best work",
   description:
@@ -88,6 +97,7 @@ const fontVars = [
   inter.variable,
   spaceGrotesk.variable,
   ibmPlexMono.variable,
+  caveat.variable,
 ].join(" ");
 
 export default function RootLayout({
