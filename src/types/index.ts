@@ -1,7 +1,10 @@
 // ─── Database row types ───────────────────────────────────────
 
+import type { PageDocument, PublishedSnapshot } from "@/lib/page-document";
+
 export type Tier = "free" | "pro" | "studio";
-export type LayoutTheme = "editorial" | "journal" | "cinematic";
+export type ThemeId = "monograph" | "roll36" | "keepsake" | "afterdark" | "cabinet";
+export type Visibility = "public" | "unlisted" | "password";
 
 export interface Profile {
   id: string;
@@ -18,65 +21,34 @@ export interface Profile {
   updated_at: string;
 }
 
-export interface Theme {
+export interface Page {
   id: string;
   user_id: string;
-  mode: "light" | "dark";
-  font_heading: string;
-  font_body: string;
-  color_background: string;
-  color_text: string;
-  color_accent: string;
-  layout_theme: LayoutTheme;
-}
-
-export interface BannerCrop {
-  zoom: number;
-  x: number;
-  y: number;
-}
-
-export interface Portfolio {
-  id: string;
-  user_id: string;
+  slug: string;
   title: string;
-  subtitle: string | null;
-  banner_url: string | null;
-  banner_crop: BannerCrop | null;
-  title_line2: string | null;
-  title_line2_accent: boolean;
+  theme: ThemeId;
+  theme_settings: Record<string, unknown>;
+  draft: PageDocument;
+  draft_rev: number;
+  published: PublishedSnapshot | null;
+  published_at: string | null;
   is_published: boolean;
+  visibility: Visibility;
+  password_hash: string | null;
+  cover_path: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface Photo {
+export interface MediaAsset {
   id: string;
-  portfolio_id: string;
+  user_id: string;
   storage_path: string;
+  has_variants: boolean;
   filename: string;
-  caption: string | null;
-  sort_order: number;
   width: number | null;
   height: number | null;
+  blur_data_url: string | null;
+  size_bytes: number | null;
   created_at: string;
-}
-
-export interface WaitlistEntry {
-  id: string;
-  email: string;
-  name: string | null;
-  instagram_handle: string | null;
-  message: string | null;
-  status: "pending" | "invited" | "declined";
-  created_at: string;
-}
-
-// ─── Form types ───────────────────────────────────────────────
-
-export interface WaitlistFormData {
-  name: string;
-  email: string;
-  instagram_handle: string;
-  message: string;
 }

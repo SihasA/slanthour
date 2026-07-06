@@ -1,148 +1,134 @@
-import { createClient } from "@/lib/supabase/server";
+// ─── Public profile ──────────────────────────────────────────────────
+// /:username — display name, bio, avatar and the person's published
+// PUBLIC pages (unlisted and password-protected pages never appear here).
+// Reads use the anon client: RLS only exposes published public pages.
+
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
-import type { Profile, Portfolio, Photo, Theme } from "@/types";
-import { buildThemeVars, getLockedTheme } from "@/lib/theme";
-import { EditorialLayout } from "@/components/portfolio/themes/EditorialLayout";
-import { JournalLayout } from "@/components/portfolio/themes/JournalLayout";
-import { CinematicLayout } from "@/components/portfolio/themes/CinematicLayout";
+import { createClient } from "@/lib/supabase/server";
+import { storageUrl } from "@/lib/media";
+import { getTheme } from "@/themes/registry";
+import type { Page, Profile } from "@/types";
 
-// ─── Dynamic metadata ────────────────────────────────────────
+export const dynamic = "force-dynamic";
 
-type PageProps = { params: Promise<{ username: string }> };
+type RouteProps = { params: Promise<{ username: string }> };
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
   const { username } = await params;
   const supabase = await createClient();
-
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, bio")
     .eq("username", username)
     .single();
-
-  if (!profile) {
-    return { title: "Not Found — Slant Hour" };
-  }
-
-  const title = `${profile.display_name} — Slant Hour`;
-  const description =
-    profile.bio ??
-    `${profile.display_name}'s photography portfolio on Slant Hour.`;
-
+  if (!profile) return { title: "Not found — Slanthour" };
   return {
-    title,
-    description,
+    title: `${profile.display_name} — Slanthour`,
+    description: profile.bio ?? `${profile.display_name}'s pages on Slanthour.`,
     openGraph: {
       title: profile.display_name,
-      description,
+      description: profile.bio ?? `${profile.display_name}'s pages on Slanthour.`,
       url: `https://slanthour.com/${username}`,
-      siteName: "Slant Hour",
+      siteName: "Slanthour",
       type: "profile",
     },
   };
 }
 
-// ─── Page ────────────────────────────────────────────────────
+type PageCard = Pick<Page, "id" | "slug" | "title" | "theme" | "cover_path" | "published_at">;
 
-export default async function PortfolioPage({ params }: PageProps) {
+export default async function ProfilePage({ params }: RouteProps) {
   const { username } = await params;
   const supabase = await createClient();
 
-  // Fetch profile
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("username", username)
     .single();
-
   if (!profile) notFound();
   const p = profile as Profile;
 
-  // Fetch portfolio + theme in parallel
-  const [{ data: portfolio }, { data: theme }] = await Promise.all([
-    supabase.from("portfolios").select("*").eq("user_id", p.id).single(),
-    supabase.from("themes").select("*").eq("user_id", p.id).single(),
-  ]);
+  const { data: pages } = await supabase
+    .from("pages")
+    .select("id, slug, title, theme, cover_path, published_at")
+    .eq("user_id", p.id)
+    .eq("is_published", true)
+    .eq("visibility", "public")
+    .order("published_at", { ascending: false });
 
-  if (!portfolio) notFound();
-  const port = portfolio as Portfolio;
-  if (!port.is_published) notFound();
-
-  // Default theme if somehow missing
-  const t: Theme = theme
-    ? (theme as Theme)
-    : {
-        id: "",
-        user_id: p.id,
-        mode: "dark",
-        font_heading: "Cormorant Garamond",
-        font_body: "DM Mono",
-        color_background: "#0a0908",
-        color_text: "#f0ece4",
-        color_accent: "#9c8e7a",
-        layout_theme: "editorial",
-      };
-
-  // Fetch photos
-  const { data: photos } = await supabase
-    .from("photos")
-    .select("*")
-    .eq("portfolio_id", port.id)
-    .order("sort_order", { ascending: true });
-
-  const photoList = (photos as Photo[]) ?? [];
-
-  const photoUrls = photoList.map((ph) => ({
-    src: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/portfolios/${ph.storage_path}`,
-    caption: ph.caption,
-  }));
-
-  const hasBanner = !!port.banner_url;
-  const hasAbout = !!(
-    p.bio ||
-    p.email_public ||
-    p.instagram_handle ||
-    p.website_url
-  );
-
-  const locked = getLockedTheme(t.layout_theme, t.color_accent);
-  const themeVars = buildThemeVars(t);
-  const layoutProps = {
-    profile: p,
-    portfolio: port,
-    photos: photoUrls,
-    theme: t,
-    hasBanner,
-    hasAbout,
-  };
+  const cards = (pages ?? []) as PageCard[];
 
   return (
-    <>
-      {/* Override body bg for this portfolio — derived from layout_theme */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-            html { scroll-behavior: smooth; }
-            body {
-              background: ${locked.bg} !important;
-              color: ${locked.text} !important;
-              -webkit-font-smoothing: antialiased;
-            }
-          `,
-        }}
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <main className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
+        {/* ── Identity ── */}
+        <header className="text-center mb-16">
+          {p.avatar_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={storageUrl(p.avatar_url)}
+              alt=""
+              className="w-20 h-20 rounded-full object-cover mx-auto mb-6 border border-rule"
+            />
+          )}
+          <h1 className="font-heading text-4xl sm:text-5xl font-light italic">{p.display_name}</h1>
+          <p className="mt-2 text-[11px] uppercase tracking-label text-muted">@{p.username}</p>
+          {p.bio && (
+            <p className="mt-6 font-copy text-[15px] leading-relaxed text-muted max-w-xl mx-auto">
+              {p.bio}
+            </p>
+          )}
+        </header>
 
-      <div style={themeVars as React.CSSProperties}>
-        {t.layout_theme === "journal" && <JournalLayout {...layoutProps} />}
-        {t.layout_theme === "cinematic" && <CinematicLayout {...layoutProps} />}
-        {(t.layout_theme === "editorial" ||
-          !["journal", "cinematic"].includes(t.layout_theme)) && (
-          <EditorialLayout {...layoutProps} />
+        {/* ── Pages ── */}
+        {cards.length === 0 ? (
+          <p className="text-center text-muted font-copy text-sm">Nothing published yet.</p>
+        ) : (
+          <ul className="grid gap-8 sm:grid-cols-2">
+            {cards.map((page) => (
+              <li key={page.id}>
+                <Link href={`/${p.username}/${page.slug}`} className="group block">
+                  <div className="aspect-[4/3] overflow-hidden bg-surface border border-rule">
+                    {page.cover_path ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={storageUrl(page.cover_path)}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted/40 font-heading italic text-xl">
+                        {page.title.slice(0, 1)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex items-baseline justify-between gap-3">
+                    <h2 className="font-heading text-lg font-light italic group-hover:text-accent transition-colors truncate">
+                      {page.title}
+                    </h2>
+                    <span className="shrink-0 text-[9px] uppercase tracking-label text-muted">
+                      {getTheme(page.theme).name}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
-    </>
+      </main>
+
+      <footer className="py-10 text-center">
+        <Link
+          href="/"
+          className="text-[9px] uppercase tracking-label text-muted/60 hover:text-muted transition-colors"
+        >
+          Made with Slanthour
+        </Link>
+      </footer>
+    </div>
   );
 }

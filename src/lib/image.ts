@@ -1,4 +1,9 @@
-import { PHOTO_MAX_DIMENSION, PHOTO_QUALITY } from "./constants";
+import {
+  PHOTO_MAX_DIMENSION,
+  PHOTO_QUALITY,
+  MEDIA_VARIANTS,
+  MEDIA_BLUR_DIMENSION,
+} from "./constants";
 
 interface CompressResult {
   blob: Blob;
@@ -55,21 +60,39 @@ export async function compressImage(
   return { blob, width: targetW, height: targetH };
 }
 
-/**
- * Generate a unique storage path for a photo upload.
- */
-export function generateStoragePath(
-  userId: string,
-  filename: string
-): string {
-  const timestamp = Date.now();
-  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${userId}/photos/${timestamp}_${safe}`;
+// ─── Responsive upload preparation ───────────────────────────────────
+// Produces the three display variants + blur placeholder for one photo.
+// Canvas re-encoding strips all EXIF metadata (including GPS) by design —
+// see ARCHITECTURE.md §9. Everything runs client-side; the server route
+// re-validates signatures and sizes before storing.
+
+export interface PreparedUpload {
+  variants: { lg: Blob; md: Blob; sm: Blob };
+  blurDataUrl: string;
+  width: number;
+  height: number;
 }
 
-/**
- * Generate the storage path for a user's banner image.
- */
-export function generateBannerPath(userId: string): string {
-  return `${userId}/banner.jpg`;
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function prepareUpload(file: File): Promise<PreparedUpload> {
+  const [lg, md, sm, blur] = await Promise.all([
+    compressImage(file, MEDIA_VARIANTS.lg),
+    compressImage(file, MEDIA_VARIANTS.md),
+    compressImage(file, MEDIA_VARIANTS.sm),
+    compressImage(file, { maxDimension: MEDIA_BLUR_DIMENSION, quality: 0.5 }),
+  ]);
+  return {
+    variants: { lg: lg.blob, md: md.blob, sm: sm.blob },
+    blurDataUrl: await blobToDataUrl(blur.blob),
+    width: lg.width,
+    height: lg.height,
+  };
 }

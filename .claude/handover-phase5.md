@@ -265,7 +265,7 @@ ALTER TABLE profiles ADD COLUMN username_changed_at TIMESTAMPTZ;
 - **Supabase project ref:** `sratnrbvvalbmiswwzpc`
 - **Migrations:** Run via `npx supabase db push` after `npx supabase link`
 - **Env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- **Test account:** sihas@slanthour.com / testpass123 (username: sihas, 2 photos, published)
+- **Test account:** sihas@slanthour.com (credentials removed from repo — see local password manager) (username: sihas, 2 photos, published)
 - **Google OAuth:** Configured in Google Cloud Console project "slanthour"
 
 ---
