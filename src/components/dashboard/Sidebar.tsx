@@ -67,11 +67,11 @@ export function Sidebar({ displayName, username, email }: SidebarProps) {
       </aside>
 
       {/* Mobile header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background/90 backdrop-blur-md border-b border-rule">
-        <Link href="/" className="block">
-          <img src="/brand/logo-light.svg" alt="Slant Hour" className="h-7 w-auto" />
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 pl-4 pr-4 py-3 bg-background/90 backdrop-blur-md border-b border-rule">
+        <Link href="/" className="block shrink-0">
+          <img src="/brand/icon.svg" alt="Slanthour" className="h-7 w-7" />
         </Link>
-        <nav className="flex items-center gap-5">
+        <nav className="flex items-center gap-3.5 min-w-0">
           {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === "/dashboard"
@@ -81,7 +81,7 @@ export function Sidebar({ displayName, username, email }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-[10px] uppercase tracking-wide transition-colors ${
+                className={`shrink-0 text-[9px] uppercase tracking-wide transition-colors ${
                   isActive
                     ? "text-foreground"
                     : "text-muted hover:text-foreground"
@@ -91,7 +91,9 @@ export function Sidebar({ displayName, username, email }: SidebarProps) {
               </Link>
             );
           })}
-          <SignOutButton />
+          <span className="shrink-0">
+            <SignOutButton />
+          </span>
         </nav>
       </header>
     </>

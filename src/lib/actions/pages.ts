@@ -11,6 +11,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
+  collectAssetIds,
   countImages,
   createEmptyDocument,
   firstImage,
@@ -21,6 +22,7 @@ import {
   type PageDocument,
   type PublishedSnapshot,
 } from "@/lib/page-document";
+import { MEDIA_BUCKET } from "@/lib/constants";
 import { getEntitlements } from "@/lib/entitlements";
 import { hashPagePassword } from "@/lib/page-password";
 import {
@@ -197,11 +199,52 @@ export async function deletePage(pageId: string): Promise<ActionResult> {
   if ("ok" in guard) return guard;
   const { supabase, user, page } = guard;
 
+  // Assets this page's draft references — candidates for cleanup once the
+  // page is gone, but only if no *other* page (e.g. a duplicate) still uses them.
+  const candidateAssetIds = collectAssetIds(parseDocument(page.draft));
+
   const { error } = await supabase.from("pages").delete().eq("id", pageId).eq("user_id", user.id);
   if (error) return err("Could not delete the page.");
 
+  if (candidateAssetIds.size > 0) await pruneOrphanedAssets(supabase, user.id, candidateAssetIds);
+
   revalidatePublic(await ownerUsername(supabase, user.id), page.slug);
   return { ok: true };
+}
+
+/** Delete media_assets (and their storage files) no longer referenced by any of the user's remaining pages. */
+async function pruneOrphanedAssets(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  candidateAssetIds: Set<string>
+): Promise<void> {
+  const { data: remaining } = await supabase
+    .from("pages")
+    .select("draft, published")
+    .eq("user_id", userId);
+
+  const stillReferenced = new Set<string>();
+  for (const row of remaining ?? []) {
+    for (const id of collectAssetIds(parseDocument(row.draft))) stillReferenced.add(id);
+    if (row.published) for (const id of collectAssetIds(parseDocument(row.published.document))) stillReferenced.add(id);
+  }
+
+  const orphanIds = [...candidateAssetIds].filter((id) => !stillReferenced.has(id));
+  if (orphanIds.length === 0) return;
+
+  const { data: assets } = await supabase
+    .from("media_assets")
+    .select("id, storage_path, has_variants")
+    .eq("user_id", userId)
+    .in("id", orphanIds);
+
+  const paths = (assets ?? []).flatMap((asset) =>
+    asset.has_variants
+      ? ["lg.jpg", "md.jpg", "sm.jpg"].map((v) => (asset.storage_path as string).replace(/lg\.jpg$/, v))
+      : [asset.storage_path as string]
+  );
+  if (paths.length > 0) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+  await supabase.from("media_assets").delete().eq("user_id", userId).in("id", orphanIds);
 }
 
 // ─── Draft autosave ──────────────────────────────────────────────────

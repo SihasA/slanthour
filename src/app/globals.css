@@ -34,6 +34,16 @@ body {
   }
 }
 
+/* ─── Utility: hide scrollbar for horizontally-scrollable nav strips ── */
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ─── Theme renderer keyframes (scoped usage via .sh-page/lightbox) ── */
 
 @keyframes shFade {

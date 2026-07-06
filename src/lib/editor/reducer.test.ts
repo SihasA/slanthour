@@ -7,7 +7,7 @@ import {
   type EditorContent,
   type EditorState,
 } from "./reducer";
-import { createEmptyDocument, createSection, sectionImages, withSectionImages, type PageImage } from "@/lib/page-document";
+import { createEmptyDocument, sectionImages, type PageImage } from "@/lib/page-document";
 import { defaultThemeSettings } from "@/themes/registry";
 
 const img = (path = "u/m/a/lg.jpg"): PageImage => ({

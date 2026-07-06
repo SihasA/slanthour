@@ -5,7 +5,7 @@
 // variants, focal-point object-position, lazy below the fold, opens the
 // shared lightbox on click when interactive.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PageImage } from "@/lib/page-document";
 import { imageSrcSet, imageUrl } from "@/lib/media";
 import { useLightbox } from "./Lightbox";
@@ -37,6 +37,28 @@ export function SmartImage({
 }: SmartImageProps) {
   const { open, enabled } = useLightbox();
   const [loaded, setLoaded] = useState(false);
+  const imgEl = useRef<HTMLImageElement | null>(null);
+
+  // React's synthetic `onLoad` is unreliable for server-rendered images: the
+  // browser starts (and often finishes) the download from the SSR HTML before
+  // hydration wires the handler, so the load event is missed and the image
+  // stays stuck at opacity 0. After mount we check `complete` directly and, if
+  // still loading, attach a real native `load` listener that can't be missed.
+  useEffect(() => {
+    const node = imgEl.current;
+    if (!node) return;
+    if (node.complete && node.naturalWidth > 0) {
+      setLoaded(true);
+      return;
+    }
+    const onLoad = () => setLoaded(true);
+    node.addEventListener("load", onLoad);
+    node.addEventListener("error", onLoad); // reveal on error too — better than a permanent blank
+    return () => {
+      node.removeEventListener("load", onLoad);
+      node.removeEventListener("error", onLoad);
+    };
+  }, [image.path]);
 
   const ratio =
     aspect ??
@@ -47,6 +69,7 @@ export function SmartImage({
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={imgEl}
       src={imageUrl(image, "lg")}
       srcSet={imageSrcSet(image)}
       sizes={sizes}
