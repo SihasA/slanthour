@@ -19,11 +19,11 @@ Legend: ✅ Done · 🟡 Partial (limitation documented) · ❌ Not done · ➖ 
 | `/pages/new` | Absent | Create action → editor | `src/app/pages/new/page.tsx` | Creates + redirects | ✅ |
 | `/editor/:pageId` | Absent (form-based portfolio editor) | Full section editor | `src/app/editor/[pageId]/` | Manual create-to-publish flow | ✅ |
 | `/settings/profile`, `/settings/account` | Single `/dashboard/settings` | Split settings, add account mgmt | `src/app/settings/` | Manual flow | ✅ |
-| Remove random/irrelevant subpages (§8) | Orphaned waitlist stack, dead `legacy/`, old prototypes | Remove + route inventory | Deletions; inventory in `ARCHITECTURE.md` §5 | Grep, build | ✅ |
+| Remove random/irrelevant subpages (§8) | Orphaned waitlist stack, dead `legacy/`, old prototypes | Remove + route inventory | Deletions; inventory in `ARCHITECTURE.md` §17 | Grep, build | ✅ |
 | `/arborAI` (user's other business) | Present, self-contained | **Retain untouched** (documented exception) | unchanged | Untouched in diff | ✅ |
 | **Core flow (§9)** | | | | | |
 | Account creation / sign-in | Google OAuth + email | Add signup page + password reset | `(auth)` routes | Manual | ✅ |
-| Create page, title, upload, arrange, theme, captions, preview, autosave, visibility, slug, publish, signed-out view, edit/republish, unpublish, delete | Only flat photo upload + single publish boolean | Everything else | Editor + server actions + public routes | E2E walkthrough (documented in §Verification of final report) | ✅ |
+| Create page, title, upload, arrange, theme, captions, preview, autosave, visibility, slug, publish, signed-out view, edit/republish, unpublish, delete | Only flat photo upload + single publish boolean | Everything else | Editor + server actions + public routes | Browser E2E walkthrough against live DB (`ARCHITECTURE.md` §13) | ✅ |
 | **Data model** | | | | | |
 | Versioned page document, stable section IDs, ordered sections (§4.7, §7) | Flat `photos.sort_order` | New JSONB document model v1 | `src/lib/page-document.ts`, `pages.draft/published` | Unit tests | ✅ |
 | Draft/published separation, atomic republish, unpublish (§12) | Single `is_published` boolean on live rows | Snapshot model | `publishPage`/`unpublishPage` server actions | Unit + manual | ✅ |
@@ -44,7 +44,7 @@ Legend: ✅ Done · 🟡 Partial (limitation documented) · ❌ Not done · ➖ 
 | Magic-byte validation, size caps (server-side) | Client-only checks | Server route validation | `src/app/api/media/route.ts` | Unit tests on validator | ✅ |
 | Responsive variants + blur placeholder + dimensions | Single 2000px JPEG | 3 variants + blur | `src/lib/image.ts` | Manual + code review | ✅ |
 | EXIF/GPS stripping | Incidental via canvas | Kept + documented as guarantee | `ARCHITECTURE.md` §9 | Code review | ✅ |
-| Deletion respects published snapshots | No safeguards | Reference check before delete | `deleteMediaAsset` | Unit tests | ✅ |
+| Deletion respects published snapshots | No safeguards | Reference check before delete; `deletePage` prunes now-orphaned assets | `DELETE /api/media/[id]`, `deletePage` | Unit tests + verification pass | ✅ |
 | **Visibility (§13)** | | | | | |
 | Public / unlisted (noindex, hidden from profile) / password (PBKDF2 hash, HMAC session cookie, no metadata leak) | Only public/unpublished | Full visibility model | `pages.visibility`, `src/lib/page-gate.ts`, `page-password.ts` | Unit + manual signed-out checks | ✅ |
 | **Profile (§14)** | | | | | |
@@ -52,7 +52,7 @@ Legend: ✅ Done · 🟡 Partial (limitation documented) · ❌ Not done · ➖ 
 | **Security (§23)** | | | | | |
 | Server-side ownership checks on all mutations | RLS only, browser-direct writes | Server actions layer | `src/lib/actions/` | Code review + tests | ✅ |
 | Secrets hygiene | Service-role key in non-ignored local file | Gitignored + rotation documented | `.gitignore`; report | `git ls-files` | 🟡 (key rotation is a user action) |
-| Private draft images | Public bucket, guessable-ish paths | Unguessable UUID paths; limitation documented | `media` paths + `ARCHITECTURE.md` §13 | Code review | 🟡 (capability-URL model, documented) |
+| Private draft images | Public bucket, guessable-ish paths | Unguessable UUID paths; limitation documented | `media` paths + `ARCHITECTURE.md` §12 | Code review | 🟡 (capability-URL model, documented) |
 | Rate limiting | None | Best-effort in-memory limiter on password + upload endpoints; platform-level limiting documented | `src/lib/rate-limit.ts` | Unit test | 🟡 |
 | **Entitlements (§19)** | | | | | |
 | Clean entitlement abstraction, editor never paywalled | Tier-gated themes + fake £6.99 modal | `src/lib/entitlements.ts`; theme gating removed | Entitlements module | Unit test | ✅ |
@@ -60,6 +60,6 @@ Legend: ✅ Done · 🟡 Partial (limitation documented) · ❌ Not done · ➖ 
 | **Analytics (§24)** | None | Not implemented (kept out of scope; documented) | — | — | ➖ (documented limitation) |
 | **Error/empty states (§22)** | Sparse | States for all listed cases | Dashboard/editor/public routes | Manual | ✅ |
 | **Tests (§25)** | None | Vitest unit suite + build/lint/typecheck; browser E2E of core flow | `src/**/*.test.ts`, `vitest.config.ts` | `npm test`, `npm run build`, `npm run lint` | 🟡 (no Playwright CI suite; documented) |
-| **Demo content (§26)** | None | Demo assets from founder's own photos + seed script | `public/demo/`, `scripts/seed-demo.mjs` | Landing showcase renders | ✅ |
-| **Docs (§4, §29)** | PLANNING_CONTEXT.md only | Three canonical docs | `ARCHITECTURE.md`, this file, `IMPLEMENTATION_PLAN.md` | Review | ✅ |
+| **Demo content (§26)** | None | Demo assets from founder's own photos + idempotent seed script | `public/demo/`, `scripts/seed-demo.mjs` | Seed run against live DB; page renders at `/demo/north` (both viewports) | ✅ |
+| **Docs (§4, §29)** | PLANNING_CONTEXT.md only | Four canonical docs + env example | `README.md`, `ARCHITECTURE.md`, this file, `IMPLEMENTATION_PLAN.md`, `.env.local.example` | Review | ✅ |
 | Domain purchasing / social features / ecommerce | Absent | Must stay absent | — | Grep | ➖ |
