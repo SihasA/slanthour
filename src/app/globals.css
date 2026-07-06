@@ -34,6 +34,13 @@ body {
   }
 }
 
+/* ─── Theme renderer keyframes (scoped usage via .sh-page/lightbox) ── */
+
+@keyframes shFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* ─── Form focus ring ───────────────────────────────────────── */
 
 input:focus,
