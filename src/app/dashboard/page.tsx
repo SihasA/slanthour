@@ -1,124 +1,89 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+// ─── Dashboard ───────────────────────────────────────────────────────
+// The user's pages, newest edits first. Each card carries the full page
+// lifecycle: edit, view, publish/unpublish, duplicate, delete.
+
 import Link from "next/link";
-import type { Portfolio } from "@/types";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { PageCard, type DashboardPage } from "@/components/dashboard/PageCard";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: portfolio }] = await Promise.all([
+  const [{ data: profile }, { data: pages, error }] = await Promise.all([
+    supabase.from("profiles").select("username").eq("id", user.id).single(),
     supabase
-      .from("profiles")
-      .select("display_name, username")
-      .eq("id", user.id)
-      .single(),
-    supabase
-      .from("portfolios")
-      .select("*")
+      .from("pages")
+      .select("id, slug, title, theme, cover_path, is_published, visibility, updated_at, published_at")
       .eq("user_id", user.id)
-      .single(),
+      .order("updated_at", { ascending: false }),
   ]);
 
-  if (!profile || !portfolio) redirect("/login");
+  if (error) {
+    return (
+      <div className="px-6 py-16 max-w-3xl">
+        <h1 className="font-heading text-2xl italic font-light mb-3">Your pages</h1>
+        <p className="text-sm text-red-400 font-copy">
+          Could not load your pages — refresh to try again.
+        </p>
+      </div>
+    );
+  }
 
-  const { count: photoCount } = await supabase
-    .from("photos")
-    .select("id", { count: "exact", head: true })
-    .eq("portfolio_id", portfolio.id);
-  const isPublished = (portfolio as Portfolio).is_published;
+  const list = (pages ?? []) as DashboardPage[];
+  const username = profile?.username ?? "";
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12 md:py-20">
-      <p className="section-label mb-6">Dashboard</p>
-      <h1 className="font-heading text-3xl md:text-4xl font-light italic text-foreground mb-12">
-        Welcome, {profile.display_name.split(" ")[0]}.
-      </h1>
-
-      {/* Portfolio status */}
-      <section className="mb-16">
-        <div className="flex items-center gap-5 mb-8">
-          <span className="section-label whitespace-nowrap">Portfolio</span>
-          <div className="flex-1 h-px bg-rule" />
+    <div className="px-6 py-10 sm:py-14 max-w-5xl">
+      <div className="flex items-center justify-between gap-4 mb-10">
+        <div>
+          <h1 className="font-heading text-3xl italic font-light">Your pages</h1>
+          {username && (
+            <a
+              href={`/${username}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-block text-[10px] uppercase tracking-wide text-muted hover:text-accent transition-colors"
+            >
+              slanthour.com/{username} ↗
+            </a>
+          )}
         </div>
+        <Link
+          href="/pages/new"
+          className="shrink-0 px-4 py-2.5 text-[10px] uppercase tracking-wide bg-foreground text-background hover:bg-accent transition-colors"
+        >
+          + New page
+        </Link>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card
-            label="Status"
-            value={isPublished ? "Published" : "Draft"}
-            accent={isPublished}
-          />
-          <Card label="Photos" value={String(photoCount ?? 0)} />
-        </div>
-
-        <div className="mt-8 flex flex-wrap gap-6">
+      {list.length === 0 ? (
+        <div className="border border-dashed border-rule py-20 text-center">
+          <p className="font-heading italic text-xl text-foreground mb-2">No pages yet.</p>
+          <p className="font-copy text-sm text-muted mb-8 max-w-sm mx-auto">
+            Turn a collection of photographs into a beautifully designed page — a series, a trip,
+            a person, a project.
+          </p>
           <Link
-            href={`/${profile.username}`}
-            className="inline-flex items-center gap-3 text-[10px] uppercase tracking-wide text-foreground border-b border-foreground pb-1 hover:text-accent hover:border-accent transition-all duration-200"
+            href="/pages/new"
+            className="inline-block px-6 py-3 text-[10px] uppercase tracking-wide bg-foreground text-background hover:bg-accent transition-colors"
           >
-            View portfolio <span className="text-sm">&rarr;</span>
+            Create your first page
           </Link>
         </div>
-      </section>
-
-      {/* Quick links */}
-      <section>
-        <div className="flex items-center gap-5 mb-8">
-          <span className="section-label whitespace-nowrap">Quick links</span>
-          <div className="flex-1 h-px bg-rule" />
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <QuickLink href="/dashboard/portfolio" label="Edit portfolio" />
-          <QuickLink href="/dashboard/settings" label="Edit profile" />
-          <QuickLink href="/dashboard/settings#theme" label="Customise theme" />
-        </div>
-      </section>
+      ) : (
+        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {list.map((page) => (
+            <PageCard key={page.id} page={page} username={username} />
+          ))}
+        </ul>
+      )}
     </div>
-  );
-}
-
-function Card({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="border border-rule px-5 py-4">
-      <p className="text-[9px] uppercase tracking-label text-accent mb-1">
-        {label}
-      </p>
-      <p
-        className={`font-heading text-xl italic ${
-          accent ? "text-accent" : "text-foreground"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function QuickLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-between px-4 py-3 border border-rule hover:border-muted transition-colors group"
-    >
-      <span className="text-[10px] uppercase tracking-wide text-muted group-hover:text-foreground transition-colors">
-        {label}
-      </span>
-      <span className="text-muted group-hover:text-accent transition-colors">
-        &rarr;
-      </span>
-    </Link>
   );
 }
