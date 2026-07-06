@@ -60,25 +60,6 @@ export async function compressImage(
   return { blob, width: targetW, height: targetH };
 }
 
-/**
- * Generate a unique storage path for a photo upload.
- */
-export function generateStoragePath(
-  userId: string,
-  filename: string
-): string {
-  const timestamp = Date.now();
-  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${userId}/photos/${timestamp}_${safe}`;
-}
-
-/**
- * Generate the storage path for a user's banner image.
- */
-export function generateBannerPath(userId: string): string {
-  return `${userId}/banner.jpg`;
-}
-
 // ─── Responsive upload preparation ───────────────────────────────────
 // Produces the three display variants + blur placeholder for one photo.
 // Canvas re-encoding strips all EXIF metadata (including GPS) by design —
