@@ -3,6 +3,7 @@
 // PUBLIC pages (unlisted and password-protected pages never appear here).
 // Reads use the anon client: RLS only exposes published public pages.
 
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -15,15 +16,31 @@ export const dynamic = "force-dynamic";
 
 type RouteProps = { params: Promise<{ username: string }> };
 
-export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
-  const { username } = await params;
+type PageCard = Pick<Page, "id" | "slug" | "title" | "theme" | "cover_path" | "published_at">;
+
+// Profile + its published public pages in one round trip (pages embedded
+// through the user_id FK; RLS only exposes published public rows to anon),
+// React-cached so generateMetadata and the page body share the fetch.
+const loadProfile = cache(async (username: string) => {
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, bio")
+    .select("*, pages(id, slug, title, theme, cover_path, published_at)")
     .eq("username", username)
+    .eq("pages.is_published", true)
+    .eq("pages.visibility", "public")
+    .order("published_at", { referencedTable: "pages", ascending: false })
     .single();
-  if (!profile) return { title: "Not found — Slanthour" };
+  if (!profile) return null;
+  const { pages, ...rest } = profile as Profile & { pages: PageCard[] };
+  return { profile: rest as Profile, cards: pages ?? [] };
+});
+
+export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
+  const { username } = await params;
+  const loaded = await loadProfile(username);
+  if (!loaded) return { title: "Not found — Slanthour" };
+  const { profile } = loaded;
   return {
     title: `${profile.display_name} — Slanthour`,
     description: profile.bio ?? `${profile.display_name}'s pages on Slanthour.`,
@@ -37,29 +54,11 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   };
 }
 
-type PageCard = Pick<Page, "id" | "slug" | "title" | "theme" | "cover_path" | "published_at">;
-
 export default async function ProfilePage({ params }: RouteProps) {
   const { username } = await params;
-  const supabase = await createClient();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("username", username)
-    .single();
-  if (!profile) notFound();
-  const p = profile as Profile;
-
-  const { data: pages } = await supabase
-    .from("pages")
-    .select("id, slug, title, theme, cover_path, published_at")
-    .eq("user_id", p.id)
-    .eq("is_published", true)
-    .eq("visibility", "public")
-    .order("published_at", { ascending: false });
-
-  const cards = (pages ?? []) as PageCard[];
+  const loaded = await loadProfile(username);
+  if (!loaded) notFound();
+  const { profile: p, cards } = loaded;
 
   return (
     <div className="min-h-screen bg-background text-foreground">

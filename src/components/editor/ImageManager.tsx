@@ -52,6 +52,7 @@ function ImageRow({
             }
             placeholder="Caption"
             aria-label="Caption"
+            title="Shown on the page, styled by the theme"
             className="w-full bg-transparent border-b border-rule focus:border-accent text-[12px] py-1 text-foreground placeholder:text-muted/40 focus:outline-none font-copy"
           />
           <input
@@ -67,6 +68,7 @@ function ImageRow({
             }
             placeholder="Alt text (describe the photo)"
             aria-label="Alt text"
+            title="Not shown on the page — read by screen readers and search engines"
             className="w-full bg-transparent border-b border-rule focus:border-accent text-[12px] py-1 text-foreground placeholder:text-muted/40 focus:outline-none font-copy"
           />
         </div>

@@ -34,6 +34,106 @@ body {
   }
 }
 
+/* ─── Landing: entrance choreography, texture, ink details ─── */
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes photoIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slowDrift {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+.rise-in {
+  opacity: 0;
+  animation: riseIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--rise-delay, 0ms);
+}
+.photo-in {
+  opacity: 0;
+  animation: photoIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--rise-delay, 0ms);
+}
+/* Museum-slow zoom inside a fixed frame. */
+.slow-drift {
+  animation: slowDrift 16s ease-in-out infinite alternate;
+}
+
+/* Cycling word — six fixed-height rows, last duplicates the first for a
+   seamless loop. Holds each word, then slides to the next. */
+.word-cycle {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.5em;
+  vertical-align: bottom;
+}
+.word-cycle > span {
+  display: block;
+  animation: wordCycle 12s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.word-cycle > span > span {
+  display: block;
+  height: 1.5em;
+  line-height: 1.5em;
+}
+@keyframes wordCycle {
+  0%, 15% { transform: translateY(0); }
+  20%, 35% { transform: translateY(-1.5em); }
+  40%, 55% { transform: translateY(-3em); }
+  60%, 75% { transform: translateY(-4.5em); }
+  80%, 95% { transform: translateY(-6em); }
+  100% { transform: translateY(-7.5em); }
+}
+
+/* Hover underline that draws itself in. */
+.draw-link {
+  position: relative;
+}
+.draw-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s ease;
+}
+.draw-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Film-grain texture (inline SVG turbulence — no asset request). */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .photo-in {
+    animation: none;
+    opacity: 1;
+  }
+  .slow-drift {
+    animation: none;
+  }
+  .word-cycle > span {
+    animation: none;
+  }
+  .fade-up {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
 /* ─── Utility: hide scrollbar for horizontally-scrollable nav strips ── */
 
 .no-scrollbar {

@@ -2,7 +2,8 @@
 
 // ─── Section list ────────────────────────────────────────────────────
 // Ordered structure of the page: select, reorder (drag or keyboard
-// buttons), add, duplicate, delete.
+// buttons), add, duplicate, delete. The add menu doubles as the first
+// explanation a new user gets of what each section actually is.
 
 import { useState } from "react";
 import {
@@ -26,23 +27,10 @@ import {
   sectionImages,
   type PageDocument,
   type Section,
-  type SectionType,
 } from "@/lib/page-document";
+import { SECTION_GROUPS, SECTION_DESCRIPTIONS, SectionGlyph } from "./section-meta";
+import { getTheme } from "@/themes/registry";
 import type { EditorAction } from "@/lib/editor/reducer";
-
-const ADDABLE: SectionType[] = [
-  "hero",
-  "image",
-  "split",
-  "row",
-  "grid",
-  "contact-sheet",
-  "sequence",
-  "text",
-  "heading",
-  "quote",
-  "spacer",
-];
 
 function summarize(section: Section): string {
   const count = sectionImages(section).length;
@@ -99,7 +87,10 @@ function SortableRow({
           ⋮⋮
         </button>
         <button onClick={onSelect} className="flex-1 min-w-0 text-left py-2.5 pr-1">
-          <span className={`block text-[10px] uppercase tracking-wide ${selected ? "text-accent" : "text-muted"}`}>
+          <span
+            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wide ${selected ? "text-accent" : "text-muted"}`}
+          >
+            <SectionGlyph type={section.type} className="shrink-0 opacity-70" />
             {SECTION_LABELS[section.type]}
           </span>
           <span className="block text-[12px] text-foreground/70 truncate font-copy">
@@ -132,15 +123,20 @@ function SortableRow({
 export function SectionList({
   document,
   selectedId,
+  theme,
   dispatch,
   onSelect,
 }: {
   document: PageDocument;
   selectedId: string | null;
+  theme: string;
   dispatch: React.Dispatch<EditorAction>;
   onSelect?: () => void;
 }) {
-  const [adding, setAdding] = useState(false);
+  // An empty page opens straight onto the add menu — the first decision
+  // a new user has to make is the one the menu explains.
+  const [adding, setAdding] = useState(document.sections.length === 0);
+  const featured = getTheme(theme).featuredSections;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -187,29 +183,50 @@ export function SectionList({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-rule p-3">
+      <div className="shrink-0 border-t border-rule p-3 max-h-[60%] overflow-y-auto">
         {adding ? (
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] uppercase tracking-wide text-muted">Add section</span>
               <button onClick={() => setAdding(false)} className="text-muted hover:text-foreground" aria-label="Close add menu">
                 ×
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {ADDABLE.map((type) => (
-                <button
-                  key={type}
-                  onClick={() => {
-                    dispatch({ type: "addSection", sectionType: type, afterId: selectedId });
-                    setAdding(false);
-                  }}
-                  className="px-2 py-2 text-left text-[11px] border border-rule hover:border-accent text-foreground/80 hover:text-foreground transition-colors"
-                >
-                  {SECTION_LABELS[type]}
-                </button>
-              ))}
-            </div>
+            {SECTION_GROUPS.map(({ group, types }) => (
+              <div key={group} className="mt-2.5">
+                <p className="text-[9px] uppercase tracking-label text-muted/60 mb-1">{group}</p>
+                <div className="space-y-1">
+                  {types.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        dispatch({ type: "addSection", sectionType: type, afterId: selectedId });
+                        setAdding(false);
+                      }}
+                      className="w-full px-2 py-1.5 text-left border border-rule hover:border-accent transition-colors group/add"
+                    >
+                      <span className="flex items-center gap-1.5 text-[11px] text-foreground/85 group-hover/add:text-foreground">
+                        <SectionGlyph type={type} className="shrink-0 opacity-70" />
+                        {SECTION_LABELS[type]}
+                        {featured.includes(type) && (
+                          <span
+                            className="ml-auto w-1 h-1 rounded-full bg-accent shrink-0"
+                            title={`Suits the ${getTheme(theme).name} theme`}
+                            aria-label={`Suits the ${getTheme(theme).name} theme`}
+                          />
+                        )}
+                      </span>
+                      <span className="block text-[10.5px] leading-snug text-muted font-copy mt-0.5">
+                        {SECTION_DESCRIPTIONS[type]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <p className="mt-3 text-[10px] leading-snug text-muted/70 font-copy">
+              Large photos always stack vertically on phones, whatever the layout.
+            </p>
           </div>
         ) : (
           <button

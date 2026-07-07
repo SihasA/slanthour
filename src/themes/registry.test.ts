@@ -12,8 +12,17 @@ import {
 } from "./registry";
 
 describe("theme registry", () => {
-  it("contains exactly the five product themes", () => {
-    expect(THEME_IDS.sort()).toEqual(["afterdark", "cabinet", "keepsake", "monograph", "roll36"]);
+  it("contains exactly the eight product themes", () => {
+    expect(THEME_IDS.sort()).toEqual([
+      "afterdark",
+      "cabinet",
+      "keepsake",
+      "klaxon",
+      "monograph",
+      "riviera",
+      "roll36",
+      "verdigris",
+    ]);
   });
 
   it("every theme has complete metadata and a valid settings schema", () => {

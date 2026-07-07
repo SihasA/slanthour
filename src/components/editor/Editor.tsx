@@ -170,6 +170,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
     id === "inspect" ? (
       <SectionInspector
         section={selectedSection}
+        theme={state.content.theme}
         dispatch={dispatch}
         hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
       />
@@ -327,6 +328,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
           <SectionList
             document={state.content.document}
             selectedId={state.selectedSectionId}
+            theme={state.content.theme}
             dispatch={dispatch}
           />
         </aside>
@@ -334,7 +336,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
         {/* Centre: live preview */}
         <main className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-[#070606]">
           <div
-            className={`min-h-full mx-auto transition-[max-width] duration-300 ${
+            className={`relative min-h-full mx-auto transition-[max-width] duration-300 ${
               device === "mobile" ? "max-w-[390px] border-x border-rule my-4 shadow-2xl" : ""
             }`}
           >
@@ -349,7 +351,8 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
             {state.content.document.sections.length === 0 && (
               <div className="absolute inset-x-0 top-1/3 text-center px-6 pointer-events-none">
                 <p className="text-muted text-sm font-copy">
-                  This page is empty. Add a section to begin.
+                  This page is empty. Add a section — a hero, a grid of photos, some text — to
+                  begin.
                 </p>
               </div>
             )}
@@ -411,6 +414,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
                 <SectionList
                   document={state.content.document}
                   selectedId={state.selectedSectionId}
+                  theme={state.content.theme}
                   dispatch={dispatch}
                   onSelect={() => setMobilePanel("inspect")}
                 />

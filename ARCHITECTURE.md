@@ -131,8 +131,10 @@ the link, but not listed."
 
 ## 6. Theme engine
 
-Five themes: **Monograph** (editorial), **Roll 36** (film contact sheet), **Keepsake**
-(scrapbook), **After Dark** (gallery/dark), **Cabinet** (museum). Each is a
+Eight themes: **Monograph** (editorial), **Roll 36** (film contact sheet), **Keepsake**
+(scrapbook), **After Dark** (gallery/dark), **Cabinet** (museum), **Riviera** (sun-lit
+postcard, scroll-rail carousel), **Klaxon** (risograph zine, index-table sheets) and
+**Verdigris** (botanical dusk, arched plate frames). Each is a
 `ThemeDefinition` (`src/themes/definitions/*`) exposing typed setting schemas (selects /
 toggles) and a `resolveTokens()` that maps settings → `--sh-*` CSS variables.
 
