@@ -54,7 +54,13 @@ export function ThemeShowcase() {
         </div>
       </div>
       <p className="mt-3 text-center text-[10px] uppercase tracking-label text-muted/60">
-        Live render — scroll inside the frame · same photos, five designs
+        Live render — scroll inside the frame ·{" "}
+        <a
+          href={`/demo?theme=${active}`}
+          className="underline underline-offset-4 text-muted hover:text-foreground transition-colors"
+        >
+          open full screen &rarr;
+        </a>
       </p>
     </div>
   );

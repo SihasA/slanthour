@@ -18,7 +18,7 @@ const TIERS = [
     period: "forever",
     lines: [
       "5 pages, 60 photographs each",
-      "All five themes, every setting",
+      "Every theme, every setting",
       "Public, unlisted and password-protected publishing",
       "A quiet “Made with Slanthour” line on published pages",
     ],
