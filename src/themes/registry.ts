@@ -9,6 +9,9 @@ import { roll36 } from "./definitions/roll36";
 import { keepsake } from "./definitions/keepsake";
 import { afterdark } from "./definitions/afterdark";
 import { cabinet } from "./definitions/cabinet";
+import { riviera } from "./definitions/riviera";
+import { klaxon } from "./definitions/klaxon";
+import { verdigris } from "./definitions/verdigris";
 import {
   SETTINGS_VERSION,
   SETTINGS_VERSION_KEY,
@@ -23,6 +26,9 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
   keepsake,
   afterdark,
   cabinet,
+  riviera,
+  klaxon,
+  verdigris,
 };
 
 export const THEME_IDS = Object.keys(THEMES) as ThemeId[];

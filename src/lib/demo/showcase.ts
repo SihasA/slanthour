@@ -69,5 +69,20 @@ export const SHOWCASE_DOCUMENT: PageDocument = {
       columns: 2,
       gap: "regular",
     },
+    {
+      // Exercises each theme's signature sheet treatment: Roll 36's bordered
+      // frames, Riviera's scroll rail, Klaxon's index table.
+      id: "demo-sheet",
+      type: "contact-sheet",
+      images: [
+        demoImage(2, "Departure"),
+        demoImage(3, "Harbour"),
+        demoImage(4, "Roadside"),
+        demoImage(5, "Low tide"),
+        demoImage(7, "North field"),
+        demoImage(8, "Last evening"),
+      ],
+      numbered: true,
+    },
   ],
 };

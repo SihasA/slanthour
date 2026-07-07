@@ -3,7 +3,15 @@
 import type { PageDocument, PublishedSnapshot } from "@/lib/page-document";
 
 export type Tier = "free" | "pro" | "studio";
-export type ThemeId = "monograph" | "roll36" | "keepsake" | "afterdark" | "cabinet";
+export type ThemeId =
+  | "monograph"
+  | "roll36"
+  | "keepsake"
+  | "afterdark"
+  | "cabinet"
+  | "riviera"
+  | "klaxon"
+  | "verdigris";
 export type Visibility = "public" | "unlisted" | "password";
 
 export interface Profile {

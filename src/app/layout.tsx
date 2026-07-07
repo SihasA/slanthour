@@ -7,6 +7,9 @@ import {
   Space_Grotesk,
   IBM_Plex_Mono,
   Caveat,
+  Fraunces,
+  Archivo,
+  Spectral,
 } from "next/font/google";
 import "./globals.css";
 
@@ -65,7 +68,34 @@ const caveat = Caveat({
   display: "swap",
 });
 
+// ─── Riviera display font ────────────────────────────────────
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["300", "400", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
+// ─── Klaxon display font ─────────────────────────────────────
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
+  variable: "--font-archivo",
+  display: "swap",
+});
+
+// ─── Verdigris display font ──────────────────────────────────
+const spectral = Spectral({
+  subsets: ["latin"],
+  weight: ["200", "300", "400"],
+  style: ["normal", "italic"],
+  variable: "--font-spectral",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://slanthour.com"),
   title: "Slant Hour — A home for your best work",
   description:
     "A curated portfolio platform for photographers and visual creatives. No algorithm, no noise — just your best photographs, presented beautifully.",
@@ -98,6 +128,9 @@ const fontVars = [
   spaceGrotesk.variable,
   ibmPlexMono.variable,
   caveat.variable,
+  fraunces.variable,
+  archivo.variable,
+  spectral.variable,
 ].join(" ");
 
 export default function RootLayout({
@@ -105,8 +138,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL;
   return (
     <html lang="en" className={fontVars}>
+      <head>
+        {/* Photographs are served from Supabase storage — pay DNS+TLS once,
+            before the first <img> is discovered, not when it loads. */}
+        {supabaseOrigin && <link rel="preconnect" href={supabaseOrigin} crossOrigin="anonymous" />}
+      </head>
       <body className="bg-background text-foreground font-body font-light">
         {children}
       </body>
