@@ -151,9 +151,11 @@ function ImageRow({
 export function ImageManager({
   section,
   dispatch,
+  hiFiUploads = false,
 }: {
   section: Section;
   dispatch: React.Dispatch<EditorAction>;
+  hiFiUploads?: boolean;
 }) {
   const images = sectionImages(section);
   const capacity = sectionImageCapacity(section.type);
@@ -180,6 +182,7 @@ export function ImageManager({
         <MediaUploader
           compact={images.length > 0}
           capacityLeft={capacityLeft}
+          hiFi={hiFiUploads}
           onUploaded={(newImages) =>
             dispatch({ type: "addImages", sectionId: section.id, images: newImages })
           }

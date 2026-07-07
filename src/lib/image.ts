@@ -2,6 +2,7 @@ import {
   PHOTO_MAX_DIMENSION,
   PHOTO_QUALITY,
   MEDIA_VARIANTS,
+  MEDIA_VARIANT_XL,
   MEDIA_BLUR_DIMENSION,
 } from "./constants";
 
@@ -68,6 +69,8 @@ export async function compressImage(
 
 export interface PreparedUpload {
   variants: { lg: Blob; md: Blob; sm: Blob };
+  /** Hi-fi variant — present only for Pro+ uploads whose source out-resolves lg. */
+  xl?: Blob;
   blurDataUrl: string;
   width: number;
   height: number;
@@ -82,15 +85,23 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-export async function prepareUpload(file: File): Promise<PreparedUpload> {
-  const [lg, md, sm, blur] = await Promise.all([
+export async function prepareUpload(
+  file: File,
+  opts?: { hiFi?: boolean }
+): Promise<PreparedUpload> {
+  const [lg, md, sm, blur, xl] = await Promise.all([
     compressImage(file, MEDIA_VARIANTS.lg),
     compressImage(file, MEDIA_VARIANTS.md),
     compressImage(file, MEDIA_VARIANTS.sm),
     compressImage(file, { maxDimension: MEDIA_BLUR_DIMENSION, quality: 0.5 }),
+    opts?.hiFi ? compressImage(file, MEDIA_VARIANT_XL) : Promise.resolve(null),
   ]);
+  // compressImage never upscales, so a source ≤2000px yields an xl identical
+  // in pixels to lg — keep xl only when it genuinely carries more resolution.
+  const xlIsLarger = xl !== null && Math.max(xl.width, xl.height) > Math.max(lg.width, lg.height);
   return {
     variants: { lg: lg.blob, md: md.blob, sm: sm.blob },
+    xl: xlIsLarger ? xl.blob : undefined,
     blurDataUrl: await blobToDataUrl(blur.blob),
     width: lg.width,
     height: lg.height,

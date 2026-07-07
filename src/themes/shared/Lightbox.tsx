@@ -134,7 +134,7 @@ export function LightboxProvider({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={current.id}
-              src={imageUrl(current, "lg")}
+              src={imageUrl(current, "xl")}
               alt={current.alt || current.caption || ""}
               className="max-h-full max-w-full object-contain select-none"
               draggable={false}

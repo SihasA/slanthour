@@ -26,14 +26,15 @@ export function validateFileLocally(file: File): string | null {
 
 export async function uploadPhoto(
   file: File,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  opts?: { hiFi?: boolean }
 ): Promise<UploadResult> {
   const localError = validateFileLocally(file);
   if (localError) return { ok: false, error: localError };
 
   let prepared;
   try {
-    prepared = await prepareUpload(file);
+    prepared = await prepareUpload(file, opts);
   } catch {
     return { ok: false, error: `Could not read “${file.name}” — the file may be corrupted.` };
   }
@@ -42,6 +43,7 @@ export async function uploadPhoto(
   form.set("lg", prepared.variants.lg);
   form.set("md", prepared.variants.md);
   form.set("sm", prepared.variants.sm);
+  if (prepared.xl) form.set("xl", prepared.xl);
   form.set("blur", prepared.blurDataUrl);
   form.set("width", String(prepared.width));
   form.set("height", String(prepared.height));

@@ -32,7 +32,16 @@ function editedLabel(iso: string): string {
   return `Edited ${new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
-export function PageCard({ page, username }: { page: DashboardPage; username: string }) {
+export function PageCard({
+  page,
+  username,
+  views = null,
+}: {
+  page: DashboardPage;
+  username: string;
+  /** 30-day view count; null hides the stat (viewer's tier lacks analytics). */
+  views?: number | null;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +111,11 @@ export function PageCard({ page, username }: { page: DashboardPage; username: st
         <p className="text-[10px] uppercase tracking-wide text-muted/70">
           {getTheme(page.theme).name} · {VISIBILITY_LABEL[page.visibility]} · {editedLabel(page.updated_at)}
         </p>
+        {views !== null && page.is_published && (
+          <p className="text-[10px] uppercase tracking-wide text-accent/80">
+            {views === 0 ? "No views yet" : `${views.toLocaleString()} view${views === 1 ? "" : "s"}`} · 30 days
+          </p>
+        )}
         {error && (
           <p className="text-[11px] text-red-400 font-copy" role="alert">
             {error}

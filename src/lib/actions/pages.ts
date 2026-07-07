@@ -23,7 +23,7 @@ import {
   type PublishedSnapshot,
 } from "@/lib/page-document";
 import { MEDIA_BUCKET } from "@/lib/constants";
-import { getEntitlements } from "@/lib/entitlements";
+import { getProfileEntitlements } from "@/lib/entitlements";
 import { hashPagePassword } from "@/lib/page-password";
 import {
   slugify,
@@ -86,6 +86,22 @@ function revalidatePublic(username: string | null, slug: string) {
   }
 }
 
+/**
+ * Pages that count against the plan limit. Keepsake (permanent-grant)
+ * pages are bought outright and are exempt; grant rows cascade-delete
+ * with their page, so the subtraction stays accurate.
+ */
+async function countablePages(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<number> {
+  const [{ count }, { data: grants }] = await Promise.all([
+    supabase.from("pages").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("permanent_grants").select("page_id").eq("user_id", userId),
+  ]);
+  return Math.max(0, (count ?? 0) - (grants ?? []).length);
+}
+
 async function uniqueSlugFor(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -115,16 +131,12 @@ export async function createPage(rawTitle: string): Promise<ActionResult<{ pageI
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("tier")
+    .select("tier, tier_expires_at")
     .eq("id", user.id)
     .single();
-  const entitlements = getEntitlements(profile?.tier);
+  const entitlements = getProfileEntitlements(profile);
 
-  const { count } = await supabase
-    .from("pages")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-  if ((count ?? 0) >= entitlements.maxPages)
+  if ((await countablePages(supabase, user.id)) >= entitlements.maxPages)
     return err(`Your plan allows ${entitlements.maxPages} pages. Delete one to create another.`);
 
   const title = (rawTitle || "Untitled").trim().slice(0, PAGE_TITLE_MAX_LENGTH) || "Untitled";
@@ -156,10 +168,8 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ page
   const { supabase, user, page } = guard;
 
   const { data: profile } = await supabase
-    .from("profiles").select("tier").eq("id", user.id).single();
-  const { count } = await supabase
-    .from("pages").select("id", { count: "exact", head: true }).eq("user_id", user.id);
-  if ((count ?? 0) >= getEntitlements(profile?.tier).maxPages)
+    .from("profiles").select("tier, tier_expires_at").eq("id", user.id).single();
+  if ((await countablePages(supabase, user.id)) >= getProfileEntitlements(profile).maxPages)
     return err("Page limit reached — delete a page before duplicating.");
 
   // Fresh section/image ids; assetIds intentionally shared (same underlying files).
@@ -234,13 +244,15 @@ async function pruneOrphanedAssets(
 
   const { data: assets } = await supabase
     .from("media_assets")
-    .select("id, storage_path, has_variants")
+    .select("id, storage_path, has_variants, has_xl")
     .eq("user_id", userId)
     .in("id", orphanIds);
 
   const paths = (assets ?? []).flatMap((asset) =>
     asset.has_variants
-      ? ["lg.jpg", "md.jpg", "sm.jpg"].map((v) => (asset.storage_path as string).replace(/lg\.jpg$/, v))
+      ? ["lg.jpg", "md.jpg", "sm.jpg", ...(asset.has_xl ? ["xl.jpg"] : [])].map((v) =>
+          (asset.storage_path as string).replace(/lg\.jpg$/, v)
+        )
       : [asset.storage_path as string]
   );
   if (paths.length > 0) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
@@ -271,8 +283,8 @@ export async function savePageDraft(
   const title = (input.title ?? "").trim().slice(0, PAGE_TITLE_MAX_LENGTH);
 
   const { data: profile } = await supabase
-    .from("profiles").select("tier").eq("id", user.id).single();
-  const entitlements = getEntitlements(profile?.tier);
+    .from("profiles").select("tier, tier_expires_at").eq("id", user.id).single();
+  const entitlements = getProfileEntitlements(profile);
   if (countImages(document) > entitlements.maxImagesPerPage)
     return err(`Your plan allows ${entitlements.maxImagesPerPage} images per page.`);
 
@@ -378,8 +390,8 @@ export async function publishPage(pageId: string): Promise<ActionResult<{ url: s
     return err("Set a password before publishing a protected page.");
 
   const { data: profile } = await supabase
-    .from("profiles").select("tier, username").eq("id", user.id).single();
-  if (!getEntitlements(profile?.tier).canPublish)
+    .from("profiles").select("tier, tier_expires_at, username").eq("id", user.id).single();
+  if (!getProfileEntitlements(profile).canPublish)
     return err("Your plan does not include publishing.");
 
   const snapshot: PublishedSnapshot = {

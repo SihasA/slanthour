@@ -16,6 +16,8 @@ export interface Profile {
   website_url: string | null;
   avatar_url: string | null;
   tier: Tier;
+  /** Paid tier lapses to free after this instant; NULL never lapses. */
+  tier_expires_at: string | null;
   username_changed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -40,11 +42,23 @@ export interface Page {
   updated_at: string;
 }
 
+export interface PermanentGrant {
+  id: string;
+  page_id: string;
+  user_id: string;
+  provider: string;
+  order_id: string;
+  purchased_at: string;
+  guaranteed_until: string;
+}
+
 export interface MediaAsset {
   id: string;
   user_id: string;
   storage_path: string;
   has_variants: boolean;
+  /** A 2560px xl.jpg exists alongside lg/md/sm (hi-fi uploads, Pro+). */
+  has_xl: boolean;
   filename: string;
   width: number | null;
   height: number | null;
