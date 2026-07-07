@@ -9,6 +9,8 @@ import type { Section, PageImage } from "@/lib/page-document";
 import type { ThemeRenderProps } from "../types";
 import { Container, Reveal, SpacerBlock, TextBody, frameNumber } from "../shared/primitives";
 import { SmartImage } from "../shared/SmartImage";
+import { PhotoRow, type PhotoRowItemOpts } from "../shared/PhotoRow";
+import { portraitConstraint } from "../shared/photo-layout";
 
 const DENSITY_COLS: Record<string, { grid: string; sheet: string; size: string }> = {
   loose: { grid: "sm:grid-cols-3", sheet: "sm:grid-cols-4", size: "33vw" },
@@ -22,25 +24,27 @@ function Frame({
   number,
   settings,
   sizes,
+  layout,
 }: {
   image: PageImage;
   group: PageImage[];
   number: number;
   settings: ThemeRenderProps["settings"];
   sizes: string;
+  /** Optional PhotoRow layout opts — override the crop setting per cell. */
+  layout?: PhotoRowItemOpts;
 }) {
   const bordered = settings.borders === true;
   const uniform = settings.crop !== "natural";
+  const imgProps = layout
+    ? layout.img
+    : { fit: (uniform ? "cover" : "natural") as "cover" | "natural", aspect: uniform ? "3 / 2" : undefined };
   return (
-    <figure className="min-w-0">
-      <div className={bordered ? "border border-[var(--sh-border)] bg-[var(--sh-surface)] p-1" : ""}>
-        <SmartImage
-          image={image}
-          group={group}
-          fit={uniform ? "cover" : "natural"}
-          aspect={uniform ? "3 / 2" : undefined}
-          sizes={sizes}
-        />
+    <figure className={`min-w-0 ${layout?.figureClass ?? ""}`}>
+      <div
+        className={`${bordered ? "border border-[var(--sh-border)] bg-[var(--sh-surface)] p-1" : ""} ${layout?.mediaClass ?? ""}`}
+      >
+        <SmartImage image={image} group={group} sizes={sizes} {...imgProps} />
       </div>
       <div className="mt-1.5 flex items-baseline justify-between gap-2 text-[10px] leading-tight text-[var(--sh-muted)]">
         {settings.frameNumbers === true && (
@@ -135,7 +139,7 @@ function Roll36Section({
       if (!section.image) return null;
       return (
         <Container width={section.width === "text" ? "text" : "wide"}>
-          <div className={section.width === "wide" || section.width === "full" ? "" : ""}>
+          <div style={settings.crop === "natural" ? portraitConstraint(section.image) : undefined}>
             <Frame
               image={section.image}
               group={[section.image]}
@@ -148,26 +152,41 @@ function Roll36Section({
       );
 
     case "split":
+    case "row": {
+      // Uniform mode crops every frame to 3:2 — the row is already even,
+      // like exposures on a strip. Natural mode uses the layout planner.
+      if (settings.crop !== "natural") {
+        const cols = section.type === "split" ? "sm:grid-cols-2" : "sm:grid-cols-3";
+        const size = section.type === "split" ? "50vw" : "33vw";
+        return (
+          <Container width="wide">
+            <div className={`grid grid-cols-1 ${cols} gap-3`}>
+              {section.images.map((image, i) => (
+                <Frame key={image.id} image={image} group={section.images} number={startNumber + i} settings={settings} sizes={`(max-width: 640px) 100vw, ${size}`} />
+              ))}
+            </div>
+          </Container>
+        );
+      }
       return (
         <Container width="wide">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {section.images.map((image, i) => (
-              <Frame key={image.id} image={image} group={section.images} number={startNumber + i} settings={settings} sizes="(max-width: 640px) 100vw, 50vw" />
-            ))}
-          </div>
+          <PhotoRow
+            images={section.images}
+            gapClass="gap-3"
+            renderItem={(planned, opts) => (
+              <Frame
+                image={planned.image}
+                group={section.images}
+                number={startNumber + planned.index}
+                settings={settings}
+                sizes={opts.sizes}
+                layout={opts}
+              />
+            )}
+          />
         </Container>
       );
-
-    case "row":
-      return (
-        <Container width="wide">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {section.images.map((image, i) => (
-              <Frame key={image.id} image={image} group={section.images} number={startNumber + i} settings={settings} sizes="(max-width: 640px) 100vw, 33vw" />
-            ))}
-          </div>
-        </Container>
-      );
+    }
 
     case "grid":
       return (
@@ -212,7 +231,9 @@ function Roll36Section({
         <div className="flex flex-col gap-8">
           {section.images.map((image, i) => (
             <Container width="wide" key={image.id}>
-              <Frame image={image} group={section.images} number={startNumber + i} settings={settings} sizes="(max-width: 1200px) 100vw, 1200px" />
+              <div style={settings.crop === "natural" ? portraitConstraint(image) : undefined}>
+                <Frame image={image} group={section.images} number={startNumber + i} settings={settings} sizes="(max-width: 1200px) 100vw, 1200px" />
+              </div>
             </Container>
           ))}
         </div>

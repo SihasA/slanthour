@@ -9,6 +9,7 @@ import type { Section, PageImage } from "@/lib/page-document";
 import type { ThemeRenderProps } from "../types";
 import { Container, Reveal, SpacerBlock, TextBody } from "../shared/primitives";
 import { SmartImage } from "../shared/SmartImage";
+import { PhotoRow } from "../shared/PhotoRow";
 
 const LETTERBOX_ASPECT: Record<string, string | undefined> = {
   none: undefined,
@@ -174,33 +175,42 @@ function AfterDarkSection({
     }
 
     case "split":
+    case "row": {
+      const overlay = settings.captions === "overlay";
       return (
         <Container width="wide">
-          <div className="grid sm:grid-cols-2 gap-2">
-            {section.images.map((image) => (
-              <CinemaFrame key={image.id} image={image} group={section.images} settings={settings} sizes="(max-width: 640px) 100vw, 50vw" />
-            ))}
-          </div>
-        </Container>
-      );
-
-    case "row":
-      return (
-        <Container width="wide">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {section.images.map((image) => (
-              <figure key={image.id}>
-                <SmartImage image={image} group={section.images} fit="cover" aspect="3 / 2" sizes="(max-width: 640px) 100vw, 33vw" />
-                {image.caption && settings.captions !== "overlay" && (
-                  <figcaption className="mt-2 text-[11px] uppercase tracking-[0.15em] text-[var(--sh-muted)]">
-                    {image.caption}
-                  </figcaption>
-                )}
+          <PhotoRow
+            images={section.images}
+            gapClass="gap-2"
+            renderItem={(planned, opts) => (
+              <figure className={`relative ${opts.figureClass}`}>
+                <div className={opts.mediaClass}>
+                  <SmartImage
+                    image={planned.image}
+                    group={section.images}
+                    sizes={opts.sizes}
+                    {...opts.img}
+                  />
+                </div>
+                {planned.image.caption &&
+                  (overlay ? (
+                    <figcaption
+                      className="absolute inset-x-0 bottom-0 px-4 py-3 text-[12px] text-white/85 pointer-events-none"
+                      style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65), transparent)" }}
+                    >
+                      {planned.image.caption}
+                    </figcaption>
+                  ) : (
+                    <figcaption className="mt-2 text-[11px] uppercase tracking-[0.15em] text-[var(--sh-muted)]">
+                      {planned.image.caption}
+                    </figcaption>
+                  ))}
               </figure>
-            ))}
-          </div>
+            )}
+          />
         </Container>
       );
+    }
 
     case "grid":
     case "contact-sheet": {

@@ -142,6 +142,21 @@ The registry (`src/themes/registry.ts`) is the single source of truth: `getTheme
 `Container`, `Reveal` (scroll reveal), `SpacerBlock`. `PageRenderer.tsx` is the single entry
 point used by both the editor preview and the published route.
 
+Every theme has a dark presentation: Monograph (`paper: dark`), Roll 36 (`surface:
+darkroom`, the default), After Dark (dark by definition), Keepsake (`paper: midnight` —
+black album pages), Cabinet (`background: slate` — dark gallery wall).
+
+**Mixed-orientation layout** (`src/themes/shared/photo-layout.ts` + `PhotoRow.tsx`): `split`
+and `row` sections are planned, not naively gridded. Justified rows give each image a grid
+column weighted by its aspect ratio (`r₁fr r₂fr …`), which makes every image in the row
+exactly the same height with zero cropping. A 3-up row with exactly one portrait becomes a
+mosaic: the portrait full-height on one side, the two landscapes stacked beside it (bottom
+cell cover-fills, so the columns stay flush). Extreme crops (panoramas, tall slivers) are
+clamped to a layout ratio band and gently cover-cropped so one odd file can't wreck a row.
+Standalone portrait images (`image`/`sequence`) are width-capped via `portraitConstraint` so
+a vertical photo tops out near viewport height instead of towering. All decisions are pure
+functions with unit tests; themes keep their own figure chrome via a render prop.
+
 Theme colours are scoped to `.sh-page`; the published route additionally sets the page
 `<body>` background inline so a theme's palette never leaks into the rest of the app.
 

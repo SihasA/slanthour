@@ -10,6 +10,8 @@ import type { Section, PageImage } from "@/lib/page-document";
 import type { ThemeRenderProps } from "../types";
 import { Container, Reveal, SpacerBlock, TextBody } from "../shared/primitives";
 import { SmartImage } from "../shared/SmartImage";
+import { PhotoRow, type PhotoRowItemOpts } from "../shared/PhotoRow";
+import { portraitConstraint } from "../shared/photo-layout";
 
 const ROTATIONS = [-2.2, 1.6, -1.1, 2.4, -1.8, 1.2, -2.6, 2.0];
 
@@ -52,6 +54,7 @@ function PhotoCard({
   sizes,
   tapeVariant = 0,
   priority = false,
+  layout,
 }: {
   image: PageImage;
   group: PageImage[];
@@ -59,6 +62,8 @@ function PhotoCard({
   sizes: string;
   tapeVariant?: number;
   priority?: boolean;
+  /** Optional PhotoRow layout opts (equal-height rows / mosaic cells). */
+  layout?: PhotoRowItemOpts;
 }) {
   const rotation = rotationFor(image.id, settings.rotation);
   const edges = settings.edges;
@@ -71,12 +76,12 @@ function PhotoCard({
 
   return (
     <figure
-      className="relative motion-safe:transition-transform motion-safe:duration-300 motion-safe:hover:rotate-0 motion-safe:hover:scale-[1.01]"
+      className={`relative motion-safe:transition-transform motion-safe:duration-300 motion-safe:hover:rotate-0 motion-safe:hover:scale-[1.01] ${layout?.figureClass ?? ""}`}
       style={{ transform: `rotate(${rotation}deg)` }}
     >
       <Tape settings={settings} variant={tapeVariant} />
-      <div className={frameClass}>
-        <SmartImage image={image} group={group} sizes={sizes} priority={priority} />
+      <div className={`${frameClass} ${layout?.mediaClass ?? ""}`}>
+        <SmartImage image={image} group={group} sizes={sizes} priority={priority} {...(layout?.img ?? {})} />
         {edges === "polaroid" && image.caption && (
           <figcaption
             className="absolute bottom-3 inset-x-3 text-center text-[16px] leading-tight text-[#4a4032] truncate"
@@ -107,6 +112,16 @@ function KeepsakeSection({
   settings: ThemeRenderProps["settings"];
   priority: boolean;
 }) {
+  // On midnight paper the "note card" surfaces become subtle light washes
+  // instead of bright white cards; photo frames stay white like real prints.
+  const dark = settings.paper === "midnight";
+  const noteCard = dark
+    ? "bg-white/[0.06] shadow-[0_1px_6px_rgba(0,0,0,0.4)]"
+    : "bg-white/70 shadow-[0_1px_6px_rgba(60,40,20,0.1)]";
+  const quoteCard = dark
+    ? "bg-white/[0.07] shadow-[0_2px_8px_rgba(0,0,0,0.45)]"
+    : "bg-white/80 shadow-[0_2px_8px_rgba(60,40,20,0.14)]";
+
   switch (section.type) {
     case "hero":
       return (
@@ -163,7 +178,7 @@ function KeepsakeSection({
     case "text":
       return (
         <Container width="text">
-          <div className="bg-white/70 shadow-[0_1px_6px_rgba(60,40,20,0.1)] px-6 py-7 sm:px-10 sm:py-9">
+          <div className={`${noteCard} px-6 py-7 sm:px-10 sm:py-9`}>
             <TextBody
               text={section.body}
               className={`text-[15.5px] leading-[1.85] ${section.align === "center" ? "text-center" : ""}`}
@@ -177,7 +192,7 @@ function KeepsakeSection({
       return (
         <Container width="text" className="text-center">
           <div
-            className="inline-block bg-white/80 shadow-[0_2px_8px_rgba(60,40,20,0.14)] px-8 py-7 motion-safe:transition-transform"
+            className={`inline-block ${quoteCard} px-8 py-7 motion-safe:transition-transform`}
             style={{ transform: `rotate(${rotationFor(section.id, settings.rotation) * 0.5}deg)` }}
           >
             <blockquote className="text-2xl sm:text-[26px] leading-snug" style={{ fontFamily: "var(--sh-annotation)" }}>
@@ -196,7 +211,7 @@ function KeepsakeSection({
       if (!section.image) return null;
       return (
         <Container width={section.width === "text" ? "text" : "wide"}>
-          <div className={section.width === "text" ? "" : "max-w-3xl mx-auto"}>
+          <div className={section.width === "text" ? "" : "max-w-3xl mx-auto"} style={portraitConstraint(section.image)}>
             <PhotoCard
               image={section.image}
               group={[section.image]}
@@ -210,12 +225,22 @@ function KeepsakeSection({
     case "split":
       return (
         <Container width="wide">
-          <div className="grid sm:grid-cols-2 gap-10 sm:gap-8 items-center max-w-4xl mx-auto">
-            {section.images.map((image, i) => (
-              <div key={image.id} className={i === 1 ? "sm:mt-16" : ""}>
-                <PhotoCard image={image} group={section.images} settings={settings} sizes="(max-width: 640px) 100vw, 40vw" tapeVariant={i} />
-              </div>
-            ))}
+          <div className="max-w-4xl mx-auto">
+            <PhotoRow
+              images={section.images}
+              gapClass="gap-10 sm:gap-8"
+              justifiedItemClass={(i) => (i === 1 ? "sm:mt-16" : "")}
+              renderItem={(planned, opts) => (
+                <PhotoCard
+                  image={planned.image}
+                  group={section.images}
+                  settings={settings}
+                  sizes={opts.sizes}
+                  tapeVariant={planned.index}
+                  layout={opts}
+                />
+              )}
+            />
           </div>
         </Container>
       );
@@ -223,13 +248,21 @@ function KeepsakeSection({
     case "row":
       return (
         <Container width="wide">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-6 items-center">
-            {section.images.map((image, i) => (
-              <div key={image.id} className={i === 1 ? "sm:-mt-8" : "sm:mt-4"}>
-                <PhotoCard image={image} group={section.images} settings={settings} sizes="(max-width: 640px) 100vw, 33vw" tapeVariant={i} />
-              </div>
-            ))}
-          </div>
+          <PhotoRow
+            images={section.images}
+            gapClass="gap-10 sm:gap-6"
+            justifiedItemClass={(i) => (i === 1 ? "sm:-mt-8" : "sm:mt-4")}
+            renderItem={(planned, opts) => (
+              <PhotoCard
+                image={planned.image}
+                group={section.images}
+                settings={settings}
+                sizes={opts.sizes}
+                tapeVariant={planned.index}
+                layout={opts}
+              />
+            )}
+          />
         </Container>
       );
 
@@ -260,7 +293,10 @@ function KeepsakeSection({
         <div className="flex flex-col" style={{ gap: "var(--sh-gap)" }}>
           {section.images.map((image, i) => (
             <Container width="wide" key={image.id}>
-              <div className={`max-w-2xl ${i % 2 === 0 ? "mr-auto sm:ml-12" : "ml-auto sm:mr-12"}`}>
+              <div
+                className={`max-w-2xl ${i % 2 === 0 ? "mr-auto sm:ml-12" : "ml-auto sm:mr-12"}`}
+                style={{ ...portraitConstraint(image), marginInline: undefined }}
+              >
                 <PhotoCard image={image} group={section.images} settings={settings} sizes="(max-width: 720px) 100vw, 680px" tapeVariant={i} />
               </div>
             </Container>

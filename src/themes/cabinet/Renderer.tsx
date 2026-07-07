@@ -9,6 +9,8 @@ import type { Section, PageImage } from "@/lib/page-document";
 import type { ThemeRenderProps } from "../types";
 import { Container, Reveal, SpacerBlock, TextBody } from "../shared/primitives";
 import { SmartImage } from "../shared/SmartImage";
+import { PhotoRow } from "../shared/PhotoRow";
+import { portraitConstraint } from "../shared/photo-layout";
 
 const MAT_CLASS: Record<string, string> = {
   none: "",
@@ -68,6 +70,12 @@ function CabinetSection({
 }) {
   const mat = MAT_CLASS[String(settings.mat)] ?? MAT_CLASS.thin;
   const scale = SCALE_COLS[String(settings.gridScale)] ?? SCALE_COLS.standard;
+  // Mats stay white on the slate wall (as in a real gallery); flat surfaces
+  // like the note card switch to a subtle light wash instead.
+  const noteCard =
+    settings.background === "slate"
+      ? "border border-[var(--sh-border)] bg-white/[0.05]"
+      : "border border-[var(--sh-border)] bg-white/60";
 
   switch (section.type) {
     case "hero":
@@ -138,7 +146,7 @@ function CabinetSection({
     case "quote":
       return (
         <Container width="text">
-          <div className="border border-[var(--sh-border)] bg-white/60 px-7 py-6">
+          <div className={`${noteCard} px-7 py-6`}>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--sh-accent)] mb-3" style={{ fontFamily: "var(--sh-annotation)" }}>
               Note
             </p>
@@ -158,7 +166,10 @@ function CabinetSection({
       if (!section.image) return null;
       return (
         <Container width={section.width === "full" ? "wide" : section.width}>
-          <figure className={section.width === "text" ? "" : "max-w-3xl mx-auto"}>
+          <figure
+            className={section.width === "text" ? "" : "max-w-3xl mx-auto"}
+            style={portraitConstraint(section.image)}
+          >
             <div className={mat}>
               <SmartImage image={section.image} sizes="(max-width: 820px) 100vw, 820px" priority={priority} />
             </div>
@@ -168,34 +179,26 @@ function CabinetSection({
       );
 
     case "split":
-      return (
-        <Container width="wide">
-          <div className="grid sm:grid-cols-2 gap-6 items-start">
-            {section.images.map((image, i) => (
-              <figure key={image.id}>
-                <div className={mat}>
-                  <SmartImage image={image} group={section.images} sizes="(max-width: 640px) 100vw, 50vw" />
-                </div>
-                <Label image={image} number={startNumber + i} settings={settings} />
-              </figure>
-            ))}
-          </div>
-        </Container>
-      );
-
     case "row":
       return (
         <Container width="wide">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
-            {section.images.map((image, i) => (
-              <figure key={image.id}>
-                <div className={mat}>
-                  <SmartImage image={image} group={section.images} sizes="(max-width: 640px) 100vw, 33vw" />
+          <PhotoRow
+            images={section.images}
+            gapClass="gap-6"
+            renderItem={(planned, opts) => (
+              <figure className={opts.figureClass}>
+                <div className={`${mat} ${opts.mediaClass}`}>
+                  <SmartImage
+                    image={planned.image}
+                    group={section.images}
+                    sizes={opts.sizes}
+                    {...opts.img}
+                  />
                 </div>
-                <Label image={image} number={startNumber + i} settings={settings} />
+                <Label image={planned.image} number={startNumber + planned.index} settings={settings} />
               </figure>
-            ))}
-          </div>
+            )}
+          />
         </Container>
       );
 
@@ -230,7 +233,7 @@ function CabinetSection({
         <div className="flex flex-col" style={{ gap: "var(--sh-gap)" }}>
           {section.images.map((image, i) => (
             <Container width="wide" key={image.id}>
-              <figure className="max-w-3xl mx-auto">
+              <figure className="max-w-3xl mx-auto" style={portraitConstraint(image)}>
                 <div className={mat}>
                   <SmartImage image={image} group={section.images} sizes="(max-width: 820px) 100vw, 820px" />
                 </div>

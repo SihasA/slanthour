@@ -18,6 +18,7 @@ export const cabinet: ThemeDefinition = {
       options: [
         { value: "paper", label: "Paper" },
         { value: "stone", label: "Stone" },
+        { value: "slate", label: "Slate (dark)" },
       ],
       default: "paper",
     },
@@ -67,6 +68,24 @@ export const cabinet: ThemeDefinition = {
   ],
   resolveTokens(settings: ThemeSettings) {
     const stone = settings.background === "stone";
+    const slate = settings.background === "slate"; // dark gallery wall
+    if (slate) {
+      return {
+        background: "#232323",
+        surface: "#2c2c2b",
+        text: "#e7e4dd",
+        muted: "#98938a",
+        accent: "#93a7d6",
+        border: "#3d3c39",
+        headingFont: SERIF,
+        bodyFont: BODY,
+        annotationFont: settings.labels === "print" ? BODY : MONO,
+        maxTextWidth: "40rem",
+        maxWideWidth: "76rem",
+        sectionGap: "5rem",
+        isDark: true,
+      };
+    }
     return {
       background: stone ? "#e9e7e2" : "#f5f3ee",
       surface: stone ? "#e0ddd6" : "#edeae2",
