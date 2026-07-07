@@ -184,14 +184,14 @@ export function createSection(type: SectionType): Section {
 
 export const SECTION_LABELS: Record<SectionType, string> = {
   hero: "Hero image",
-  image: "Image",
+  image: "Photo",
   split: "Two-image split",
   row: "Three-image row",
   grid: "Grid",
   "contact-sheet": "Contact sheet",
-  sequence: "Image sequence",
+  sequence: "Photo sequence",
   text: "Text",
-  heading: "Title",
+  heading: "Heading",
   quote: "Quote",
   spacer: "Spacer",
 };
