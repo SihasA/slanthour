@@ -5,9 +5,12 @@
 // in code (the metadata for protected pages leaks nothing).
 
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPageAccess } from "@/lib/page-gate";
+import { pageViewRecorder } from "@/lib/analytics";
+import { getProfileEntitlements } from "@/lib/entitlements";
 import { parseDocument, type PublishedSnapshot } from "@/lib/page-document";
 import { storageUrl } from "@/lib/media";
 import { PageRenderer } from "@/themes/PageRenderer";
@@ -23,7 +26,7 @@ async function loadPage(username: string, slug: string) {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
-    .select("id, username, display_name")
+    .select("id, username, display_name, tier, tier_expires_at")
     .eq("username", username)
     .single();
   if (!profile) return null;
@@ -37,11 +40,29 @@ async function loadPage(username: string, slug: string) {
   if (!page || !page.is_published || !page.published) return null;
 
   return {
-    profile: profile as Pick<Profile, "id" | "username" | "display_name">,
+    profile: profile as Pick<
+      Profile,
+      "id" | "username" | "display_name" | "tier" | "tier_expires_at"
+    >,
     page: page as Pick<Page, "id" | "user_id" | "slug" | "title" | "visibility" | "is_published" | "cover_path"> & {
       published: PublishedSnapshot;
     },
   };
+}
+
+/** Keepsake pages and paid tiers publish without the Slanthour badge. */
+async function showBadge(
+  profile: { tier: Profile["tier"]; tier_expires_at: string | null },
+  pageId: string
+): Promise<boolean> {
+  if (getProfileEntitlements(profile).removeBadge) return false;
+  const admin = createAdminClient();
+  const { data: grant } = await admin
+    .from("permanent_grants")
+    .select("id")
+    .eq("page_id", pageId)
+    .maybeSingle();
+  return grant === null;
 }
 
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
@@ -82,6 +103,13 @@ export default async function PublishedPage({ params }: RouteProps) {
     if (!unlocked) return <PasswordGate pageId={page.id} />;
   }
 
+  // Count the view once the response is on its way (never blocks render);
+  // bots, link-preview fetchers and the owner's own visits are excluded.
+  const recordView = await pageViewRecorder(page.id, page.user_id);
+  if (recordView) after(recordView);
+
+  const badge = await showBadge(profile, page.id);
+
   const snapshot = page.published;
   const document = parseDocument(snapshot.document);
   const tokens = getTheme(snapshot.theme).resolveTokens(
@@ -112,9 +140,15 @@ export default async function PublishedPage({ params }: RouteProps) {
         >
           More by {profile.display_name}
         </a>
-        <span className="block mt-2 text-[9px] uppercase tracking-[0.25em] opacity-35" style={{ color: tokens.muted }}>
-          Made with Slanthour
-        </span>
+        {badge && (
+          <a
+            href={`/?ref=${profile.username}`}
+            className="block mt-2 text-[9px] uppercase tracking-[0.25em] opacity-35 hover:opacity-70 transition-opacity"
+            style={{ color: tokens.muted }}
+          >
+            Made with Slanthour
+          </a>
+        )}
       </footer>
     </>
   );

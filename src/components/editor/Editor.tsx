@@ -15,6 +15,7 @@ import {
   type EditorContent,
 } from "@/lib/editor/reducer";
 import { savePageDraft, publishPage, unpublishPage } from "@/lib/actions/pages";
+import { getProfileEntitlements } from "@/lib/entitlements";
 import { PageRenderer } from "@/themes/PageRenderer";
 import type { Page, Profile } from "@/types";
 import type { ThemeSettings } from "@/themes/types";
@@ -167,7 +168,11 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
 
   const panelContent = (id: PanelId) =>
     id === "inspect" ? (
-      <SectionInspector section={selectedSection} dispatch={dispatch} />
+      <SectionInspector
+        section={selectedSection}
+        dispatch={dispatch}
+        hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
+      />
     ) : id === "theme" ? (
       <ThemePanel content={state.content} dispatch={dispatch} />
     ) : (

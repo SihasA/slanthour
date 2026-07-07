@@ -25,6 +25,7 @@ function assetToPageImage(asset: MediaAsset): PageImage {
     assetId: asset.id,
     path: asset.storage_path,
     hasVariants: asset.has_variants,
+    hasXl: asset.has_xl,
     width: asset.width,
     height: asset.height,
     alt: "",
@@ -37,10 +38,13 @@ export function MediaUploader({
   onUploaded,
   capacityLeft = Infinity,
   compact = false,
+  hiFi = false,
 }: {
   onUploaded: (images: PageImage[]) => void;
   capacityLeft?: number;
   compact?: boolean;
+  /** Also generate the 2560px xl variant (Pro+; server re-checks the tier). */
+  hiFi?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -52,8 +56,10 @@ export function MediaUploader({
   }
 
   async function startUpload(file: File, key: string) {
-    const result = await uploadPhoto(file, (fraction) =>
-      patchItem(key, { progress: fraction })
+    const result = await uploadPhoto(
+      file,
+      (fraction) => patchItem(key, { progress: fraction }),
+      { hiFi }
     );
     if (result.ok && result.asset) {
       setQueue((q) => q.filter((item) => item.key !== key));

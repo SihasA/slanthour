@@ -17,6 +17,8 @@ export interface PageImage {
   path: string;
   /** True when md/sm variants exist alongside lg at the same directory. */
   hasVariants?: boolean;
+  /** True when a 2560px xl variant also exists (hi-fi uploads, Pro+). */
+  hasXl?: boolean;
   width: number | null;
   height: number | null;
   alt: string;
@@ -267,6 +269,7 @@ function sanitizeImage(v: unknown): PageImage | null {
     assetId: typeof v.assetId === "string" ? v.assetId : null,
     path: v.path,
     hasVariants: v.hasVariants === true,
+    hasXl: v.hasXl === true,
     width: typeof v.width === "number" ? v.width : null,
     height: typeof v.height === "number" ? v.height : null,
     alt: typeof v.alt === "string" ? v.alt : "",

@@ -13,6 +13,7 @@ import {
   safeFilename,
 } from "@/lib/media-validation";
 import { rateLimit } from "@/lib/rate-limit";
+import { getProfileEntitlements } from "@/lib/entitlements";
 import type { MediaAsset } from "@/types";
 
 export const runtime = "nodejs";
@@ -53,6 +54,26 @@ export async function POST(request: Request) {
     variants[key] = bytes;
   }
 
+  // Optional hi-fi variant — accepted only when the account's tier includes
+  // it (the tier is checked here, never trusted from the client), and it
+  // must validate like the required variants. Ineligible xl parts are
+  // silently dropped so a stale client never fails the whole upload.
+  let xlBytes: Uint8Array | null = null;
+  const xlBlob = form.get("xl");
+  if (xlBlob instanceof Blob) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tier, tier_expires_at")
+      .eq("id", user.id)
+      .single();
+    if (getProfileEntitlements(profile).hiFiUploads) {
+      const bytes = new Uint8Array(await xlBlob.arrayBuffer());
+      const check = checkUploadedImage(bytes);
+      if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+      xlBytes = bytes;
+    }
+  }
+
   const dims = checkDimensions(form.get("width"), form.get("height"));
   if (!dims) return NextResponse.json({ error: "Invalid image dimensions." }, { status: 400 });
   const blur = checkBlurDataUrl(form.get("blur"));
@@ -62,11 +83,16 @@ export async function POST(request: Request) {
   const dir = `${user.id}/m/${assetId}`;
   const uploaded: string[] = [];
 
-  for (const key of VARIANT_KEYS) {
+  const toWrite: Array<[key: string, bytes: Uint8Array]> = VARIANT_KEYS.map(
+    (key) => [key, variants[key]!]
+  );
+  if (xlBytes) toWrite.push(["xl", xlBytes]);
+
+  for (const [key, bytes] of toWrite) {
     const path = `${dir}/${key}.jpg`;
     const { error } = await supabase.storage
       .from(MEDIA_BUCKET)
-      .upload(path, variants[key]!, { contentType: "image/jpeg", upsert: false });
+      .upload(path, bytes, { contentType: "image/jpeg", upsert: false });
     if (error) {
       // Roll back anything already written so failed uploads leave no orphans.
       if (uploaded.length > 0) await supabase.storage.from(MEDIA_BUCKET).remove(uploaded);
@@ -82,6 +108,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       storage_path: `${dir}/lg.jpg`,
       has_variants: true,
+      has_xl: xlBytes !== null,
       filename,
       width: dims.width,
       height: dims.height,

@@ -52,7 +52,7 @@ export async function DELETE(
 
   // Remove all stored files for the asset (variants or the legacy single file).
   const paths = asset.has_variants
-    ? ["lg.jpg", "md.jpg", "sm.jpg"].map((v) =>
+    ? ["lg.jpg", "md.jpg", "sm.jpg", ...(asset.has_xl ? ["xl.jpg"] : [])].map((v) =>
         (asset.storage_path as string).replace(/lg\.jpg$/, v)
       )
     : [asset.storage_path as string];

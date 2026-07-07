@@ -18,7 +18,7 @@ export default function TermsPage() {
       <main className="max-w-2xl mx-auto px-6 py-12 md:py-16">
         <h1 className="font-heading text-4xl font-light italic mb-2">Terms of service</h1>
         <p className="text-[11px] uppercase tracking-label text-muted mb-8">
-          Last updated 6 July 2026
+          Last updated 7 July 2026
         </p>
 
         <h2 className={sectionTitle}>The service</h2>
@@ -47,6 +47,30 @@ export default function TermsPage() {
         <p className={body}>
           Published pages remain publicly available until you unpublish or delete them, or your
           account is removed. Draft content is private to your account.
+        </p>
+
+        <h2 className={sectionTitle}>Permanent pages (&ldquo;Keepsake pages&rdquo;)</h2>
+        <p className={body}>
+          A Keepsake page is a one-time purchase attached to a single published page. When you
+          buy one, we commit to keeping that page published and served for at least ten years
+          from the date of purchase, independent of any subscription. You can unpublish, edit or
+          delete your own Keepsake page at any time; doing so doesn&apos;t extend or refund the
+          purchase.
+        </p>
+        <p className={`${body} mt-4`}>
+          Every Keepsake page includes a downloadable archive — a self-contained copy of the
+          page that works on any web host, without Slanthour. If Slanthour ever winds down, we
+          will give at least twelve months&apos; notice to the email on your account, keep archive
+          downloads available for that entire period, and make reasonable efforts to keep
+          Keepsake pages reachable through the notice period. This commitment survives a sale of
+          the service: any acquirer takes on these obligations.
+        </p>
+        <p className={`${body} mt-4`}>
+          After the ten-year term we expect to keep Keepsake pages up at no further charge; if
+          that ever has to change, you&apos;ll get twelve months&apos; notice and the archive
+          download, not a surprise takedown. Keepsake purchases are refundable within 14 days if
+          the page hasn&apos;t been shared publicly. Content that violates the acceptable-use
+          rules can be removed regardless of purchase, without refund.
         </p>
 
         <h2 className={sectionTitle}>Termination</h2>

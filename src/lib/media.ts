@@ -5,13 +5,13 @@
 import { MEDIA_BUCKET } from "./constants";
 import type { PageImage } from "./page-document";
 
-export type MediaVariant = "lg" | "md" | "sm";
+export type MediaVariant = "xl" | "lg" | "md" | "sm";
 
 function publicUrl(path: string): string {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${MEDIA_BUCKET}/${path}`;
 }
 
-/** New-pipeline assets live at {userId}/m/{assetId}/lg.jpg with md/sm siblings. */
+/** New-pipeline assets live at {userId}/m/{assetId}/lg.jpg with siblings. */
 function variantPath(lgPath: string, variant: MediaVariant): string {
   return variant === "lg" ? lgPath : lgPath.replace(/lg\.jpg$/, `${variant}.jpg`);
 }
@@ -19,22 +19,32 @@ function variantPath(lgPath: string, variant: MediaVariant): string {
 /**
  * Resolve the URL for a page image. `path` may be an absolute URL (demo
  * fixtures) or a storage path; legacy single-file assets have no variants.
+ * Asking for xl on an image without one falls back to lg.
  */
-export function imageUrl(image: Pick<PageImage, "path" | "hasVariants">, variant: MediaVariant = "lg"): string {
+export function imageUrl(
+  image: Pick<PageImage, "path" | "hasVariants" | "hasXl">,
+  variant: MediaVariant = "lg"
+): string {
   if (image.path.startsWith("http") || image.path.startsWith("/")) return image.path;
   if (!image.hasVariants) return publicUrl(image.path);
-  return publicUrl(variantPath(image.path, variant));
+  const v = variant === "xl" && !image.hasXl ? "lg" : variant;
+  return publicUrl(variantPath(image.path, v));
 }
 
 /** srcSet string for responsive rendering (only when variants exist). */
-export function imageSrcSet(image: Pick<PageImage, "path" | "hasVariants" | "width">): string | undefined {
+export function imageSrcSet(
+  image: Pick<PageImage, "path" | "hasVariants" | "hasXl" | "width">
+): string | undefined {
   if (image.path.startsWith("http") || image.path.startsWith("/") || !image.hasVariants) return undefined;
   const w = image.width ?? 2000;
-  return [
+  const entries = [
     `${imageUrl(image, "sm")} 480w`,
     `${imageUrl(image, "md")} 1000w`,
     `${imageUrl(image, "lg")} ${Math.min(w, 2000)}w`,
-  ].join(", ");
+  ];
+  // width/height describe the lg variant; the xl file is 2560 on its long edge.
+  if (image.hasXl) entries.push(`${imageUrl(image, "xl")} 2560w`);
+  return entries.join(", ");
 }
 
 /** URL for a bare storage path (page covers, avatars). */

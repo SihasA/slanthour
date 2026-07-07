@@ -59,9 +59,11 @@ function Select({
 export function SectionInspector({
   section,
   dispatch,
+  hiFiUploads = false,
 }: {
   section: Section | null;
   dispatch: React.Dispatch<EditorAction>;
+  hiFiUploads?: boolean;
 }) {
   if (!section) {
     return (
@@ -313,7 +315,7 @@ export function SectionInspector({
           <label className={fieldLabel}>
             {sectionImageCapacity(section.type) === 1 ? "Image" : "Images"}
           </label>
-          <ImageManager section={section} dispatch={dispatch} />
+          <ImageManager section={section} dispatch={dispatch} hiFiUploads={hiFiUploads} />
         </div>
       )}
     </div>

@@ -16,6 +16,9 @@ export const MEDIA_VARIANTS = {
   md: { maxDimension: 1000, quality: 0.78 },
   sm: { maxDimension: 480, quality: 0.72 },
 } as const;
+// High-fidelity variant (Pro+ uploads): generated only when the source is
+// actually larger than lg, and dropped otherwise — never an upscale.
+export const MEDIA_VARIANT_XL = { maxDimension: 2560, quality: 0.85 } as const;
 export const MEDIA_BLUR_DIMENSION = 16;
 export const MEDIA_BUCKET = "portfolios"; // historical bucket name, kept for data continuity
 

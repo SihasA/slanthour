@@ -219,12 +219,32 @@ focal point via `object-position`, lazy-loads below the fold, and opens the ligh
 
 ---
 
-## 10. Entitlements
+## 10. Entitlements & monetization groundwork
 
-`src/lib/entitlements.ts` maps `tier` → limits (free 5 pages / 60 images per page; pro 25 /
-200; studio 100 / 500). Enforced in `createPage`/`duplicatePage` and when adding images.
-Billing is not wired up — the platform is free in early access — but the limit surface exists
-so pricing can be switched on without a data-model change.
+`src/lib/entitlements.ts` maps `tier` → capability (free 5 pages / 60 images per page; pro
+25 / 200; studio 100 / 500) plus the paid-feature flags: `removeBadge`, `hiFiUploads`,
+`analytics`. `resolveTier` handles expiry (`profiles.tier_expires_at`): a lapsed paid tier
+reads as free with no writes needed. Enforced in `createPage`/`duplicatePage`/`savePageDraft`
+and in the media upload route.
+
+Everything except the payment provider is built (see MONETIZATION_PLAN.md):
+
+- **Billing effects** (`src/lib/billing/effects.ts`) — `setTier`, `clearTier`,
+  `grantPermanentPage`, and a `billing_events` idempotency ledger. A future webhook route
+  verifies the provider signature and reduces events to these three calls; nothing else in
+  the app will know the provider exists.
+- **Badge** — free-tier published pages carry a "Made with Slanthour" footer link
+  (`/?ref=<username>`); hidden for paid tiers and Keepsake pages.
+- **Hi-fi uploads** — Pro+ uploads also produce `xl.jpg` (2560px, q0.85), generated
+  client-side, tier-checked server-side, surfaced through `imageSrcSet` and the Lightbox.
+  Never an upscale: sources ≤2000px skip it. `media_assets.has_xl` / `PageImage.hasXl`.
+- **Analytics** — cookie-less daily aggregates (`page_view_daily`, `increment_page_view`
+  RPC, service-role only), recorded via `next/server` `after()` on the published route with
+  bot/link-preview UA filtering and owner-visit exclusion. Recorded for everyone; shown on
+  the dashboard only with the `analytics` entitlement.
+- **Keepsake pages** — `permanent_grants` rows (10-year `guaranteed_until`) exempt a page
+  from `maxPages` and remove the badge; the T&C provision is live on /terms. Purchase flow
+  arrives with the provider.
 
 ---
 
