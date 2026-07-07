@@ -4,6 +4,7 @@
 // the lookup uses the service-role client and visibility is enforced here
 // in code (the metadata for protected pages leaks nothing).
 
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import type { Metadata } from "next";
@@ -22,33 +23,35 @@ export const dynamic = "force-dynamic";
 
 type RouteProps = { params: Promise<{ username: string; slug: string }> };
 
-async function loadPage(username: string, slug: string) {
-  const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id, username, display_name, tier, tier_expires_at")
-    .eq("username", username)
-    .single();
-  if (!profile) return null;
+type LoadedProfile = Pick<
+  Profile,
+  "id" | "username" | "display_name" | "tier" | "tier_expires_at"
+>;
 
+// One joined query (owner embedded via the user_id FK) instead of two
+// sequential round trips, and React-cached so generateMetadata and the page
+// body share a single fetch per request. The DB lives in eu-west-1; every
+// avoided round trip is real TTFB.
+const loadPage = cache(async (username: string, slug: string) => {
+  const admin = createAdminClient();
   const { data: page } = await admin
     .from("pages")
-    .select("id, user_id, slug, title, visibility, is_published, published, cover_path")
-    .eq("user_id", profile.id)
+    .select(
+      "id, user_id, slug, title, visibility, is_published, published, cover_path, profiles!inner(id, username, display_name, tier, tier_expires_at)"
+    )
+    .eq("profiles.username", username)
     .eq("slug", slug)
     .single();
   if (!page || !page.is_published || !page.published) return null;
 
   return {
-    profile: profile as Pick<
-      Profile,
-      "id" | "username" | "display_name" | "tier" | "tier_expires_at"
-    >,
-    page: page as Pick<Page, "id" | "user_id" | "slug" | "title" | "visibility" | "is_published" | "cover_path"> & {
-      published: PublishedSnapshot;
-    },
+    profile: page.profiles as unknown as LoadedProfile,
+    page: page as unknown as Pick<
+      Page,
+      "id" | "user_id" | "slug" | "title" | "visibility" | "is_published" | "cover_path"
+    > & { published: PublishedSnapshot },
   };
-}
+});
 
 /** Keepsake pages and paid tiers publish without the Slanthour badge. */
 async function showBadge(
@@ -103,12 +106,14 @@ export default async function PublishedPage({ params }: RouteProps) {
     if (!unlocked) return <PasswordGate pageId={page.id} />;
   }
 
-  // Count the view once the response is on its way (never blocks render);
+  // Badge lookup and view-recorder setup are independent — run them together.
+  // The view itself is counted once the response is on its way (after());
   // bots, link-preview fetchers and the owner's own visits are excluded.
-  const recordView = await pageViewRecorder(page.id, page.user_id);
+  const [badge, recordView] = await Promise.all([
+    showBadge(profile, page.id),
+    pageViewRecorder(page.id, page.user_id),
+  ]);
   if (recordView) after(recordView);
-
-  const badge = await showBadge(profile, page.id);
 
   const snapshot = page.published;
   const document = parseDocument(snapshot.document);
