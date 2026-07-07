@@ -21,6 +21,9 @@ export interface SmartImageProps {
   fit?: "cover" | "natural";
   /** Fixed aspect ratio for cover mode (e.g. "3 / 2"); natural uses intrinsic. */
   aspect?: string;
+  /** Fill the parent's height instead of deriving height from aspect ratio.
+   * The parent must size the cell (e.g. a grid track). Implies cover. */
+  fill?: boolean;
   className?: string;
   rounded?: string;
 }
@@ -32,6 +35,7 @@ export function SmartImage({
   priority = false,
   fit = "natural",
   aspect,
+  fill = false,
   className = "",
   rounded,
 }: SmartImageProps) {
@@ -66,6 +70,8 @@ export function SmartImage({
 
   const objectPosition = image.focal ? `${image.focal.x}% ${image.focal.y}%` : undefined;
 
+  const covering = fill || fit === "cover";
+
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -83,21 +89,23 @@ export function SmartImage({
       onLoad={() => setLoaded(true)}
       className={`block w-full h-full transition-opacity duration-300 motion-reduce:transition-none ${
         loaded ? "opacity-100" : "opacity-0"
-      } ${fit === "cover" ? "object-cover" : "object-contain"}`}
+      } ${covering ? "object-cover" : "object-contain"}`}
       style={{ objectPosition }}
     />
   );
 
   const wrapperStyle: React.CSSProperties = {
-    aspectRatio: fit === "cover" ? (aspect ?? ratio) : ratio,
+    // fill: the parent (e.g. a grid track) owns the height — no intrinsic ratio.
+    aspectRatio: fill ? undefined : fit === "cover" ? (aspect ?? ratio) : ratio,
     backgroundImage: !loaded && image.blur ? `url(${image.blur})` : undefined,
     backgroundSize: "cover",
     backgroundPosition: objectPosition ?? "center",
   };
+  const fillClass = fill ? "h-full min-h-0" : "";
 
   if (!enabled) {
     return (
-      <div className={`relative overflow-hidden ${rounded ?? ""} ${className}`} style={wrapperStyle}>
+      <div className={`relative overflow-hidden ${fillClass} ${rounded ?? ""} ${className}`} style={wrapperStyle}>
         {img}
       </div>
     );
@@ -108,7 +116,7 @@ export function SmartImage({
       type="button"
       onClick={() => open(image, group ?? [image])}
       aria-label={`View photograph${image.caption ? `: ${image.caption}` : ""}`}
-      className={`relative block w-full overflow-hidden cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sh-accent)] ${rounded ?? ""} ${className}`}
+      className={`relative block w-full overflow-hidden cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sh-accent)] ${fillClass} ${rounded ?? ""} ${className}`}
       style={wrapperStyle}
     >
       {img}

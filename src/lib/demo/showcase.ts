@@ -50,9 +50,11 @@ export const SHOWCASE_DOCUMENT: PageDocument = {
       level: 1,
     },
     {
+      // Mixed orientations on purpose: one portrait among two landscapes
+      // exercises the mosaic layout (portrait beside stacked landscapes).
       id: "demo-row",
       type: "row",
-      images: [demoImage(3, "Harbour"), demoImage(4, "Interval"), demoImage(5, "Low tide")],
+      images: [demoImage(3, "Harbour"), demoImage(6, "The long climb", true), demoImage(5, "Low tide")],
     },
     {
       id: "demo-quote",

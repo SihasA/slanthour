@@ -9,6 +9,8 @@ import type { Section, PageImage } from "@/lib/page-document";
 import type { ThemeRenderProps } from "../types";
 import { Container, Reveal, SpacerBlock, TextBody } from "../shared/primitives";
 import { SmartImage } from "../shared/SmartImage";
+import { PhotoRow } from "../shared/PhotoRow";
+import { portraitConstraint } from "../shared/photo-layout";
 
 const GAP_CLASS = { tight: "gap-1", regular: "gap-4", loose: "gap-8" } as const;
 
@@ -147,6 +149,7 @@ function MonographSection({
                 ? "lg:grid lg:grid-cols-[1fr_14rem] lg:gap-8 lg:items-end"
                 : ""
             }
+            style={section.width === "full" ? undefined : portraitConstraint(section.image)}
           >
             <div className={frame}>
               <SmartImage image={section.image} priority={priority} sizes="(max-width: 1100px) 100vw, 1100px" />
@@ -158,34 +161,26 @@ function MonographSection({
     }
 
     case "split":
-      return (
-        <Container width="wide">
-          <div className="grid sm:grid-cols-2 gap-5 sm:gap-8 items-start">
-            {section.images.map((image) => (
-              <figure key={image.id}>
-                <div className={frame}>
-                  <SmartImage image={image} group={section.images} sizes="(max-width: 640px) 100vw, 50vw" />
-                </div>
-                <Caption image={image} position={captionPos} />
-              </figure>
-            ))}
-          </div>
-        </Container>
-      );
-
     case "row":
       return (
         <Container width="wide">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-start">
-            {section.images.map((image) => (
-              <figure key={image.id}>
-                <div className={frame}>
-                  <SmartImage image={image} group={section.images} sizes="(max-width: 640px) 100vw, 33vw" />
+          <PhotoRow
+            images={section.images}
+            gapClass={section.type === "split" ? "gap-5 sm:gap-8" : "gap-4 sm:gap-6"}
+            renderItem={(planned, opts) => (
+              <figure className={opts.figureClass}>
+                <div className={`${frame} ${opts.mediaClass}`}>
+                  <SmartImage
+                    image={planned.image}
+                    group={section.images}
+                    sizes={opts.sizes}
+                    {...opts.img}
+                  />
                 </div>
-                <Caption image={image} position={captionPos} />
+                <Caption image={planned.image} position={captionPos} />
               </figure>
-            ))}
-          </div>
+            )}
+          />
         </Container>
       );
 
@@ -219,7 +214,7 @@ function MonographSection({
         <div className="flex flex-col" style={{ gap: "var(--sh-gap)" }}>
           {section.images.map((image) => (
             <Container width="wide" key={image.id}>
-              <figure>
+              <figure style={portraitConstraint(image)}>
                 <div className={frame}>
                   <SmartImage image={image} group={section.images} sizes="(max-width: 1100px) 100vw, 1100px" />
                 </div>
