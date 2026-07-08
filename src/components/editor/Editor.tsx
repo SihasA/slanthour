@@ -332,6 +332,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
         {/* Left: section list (desktop) */}
         <aside className="hidden lg:flex w-[250px] shrink-0 border-r border-rule flex-col min-h-0">
           <SectionList
+            id="sections-desktop"
             document={state.content.document}
             selectedId={state.selectedSectionId}
             theme={state.content.theme}
@@ -422,6 +423,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
               {mobilePanel === "sections" ? (
                 <SectionList
+                  id="sections-mobile"
                   document={state.content.document}
                   selectedId={state.selectedSectionId}
                   theme={state.content.theme}

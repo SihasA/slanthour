@@ -204,6 +204,7 @@ function TrayThumb({
 }
 
 export function SectionList({
+  id,
   document,
   selectedId,
   theme,
@@ -212,6 +213,10 @@ export function SectionList({
   hiFiUploads = false,
   pageCapacityLeft = Infinity,
 }: {
+  // Stable DndContext id — without it dnd-kit's global counter diverges
+  // between server and client (the list mounts twice: aside + sheet) and
+  // hydration logs an aria-describedby mismatch.
+  id: string;
   document: PageDocument;
   selectedId: string | null;
   theme: string;
@@ -248,7 +253,7 @@ export function SectionList({
             No sections yet. Add your first one below.
           </p>
         ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext id={id} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext
               items={document.sections.map((s) => s.id)}
               strategy={verticalListSortingStrategy}
