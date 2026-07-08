@@ -7,9 +7,9 @@
 
 import { useRef, useState } from "react";
 import { uploadPhoto, validateFileLocally } from "@/lib/upload-client";
-import { newSectionId, type PageImage } from "@/lib/page-document";
+import type { PageImage } from "@/lib/page-document";
+import { pageImageFromAsset } from "@/lib/media";
 import { PHOTO_ACCEPTED_TYPES } from "@/lib/constants";
-import type { MediaAsset } from "@/types";
 
 interface QueueItem {
   key: string;
@@ -17,21 +17,6 @@ interface QueueItem {
   progress: number;
   status: "uploading" | "error";
   error?: string;
-}
-
-function assetToPageImage(asset: MediaAsset): PageImage {
-  return {
-    id: newSectionId(),
-    assetId: asset.id,
-    path: asset.storage_path,
-    hasVariants: asset.has_variants,
-    hasXl: asset.has_xl,
-    width: asset.width,
-    height: asset.height,
-    alt: "",
-    caption: "",
-    blur: asset.blur_data_url,
-  };
 }
 
 export function MediaUploader({
@@ -63,7 +48,7 @@ export function MediaUploader({
     );
     if (result.ok && result.asset) {
       setQueue((q) => q.filter((item) => item.key !== key));
-      onUploaded([assetToPageImage(result.asset)]);
+      onUploaded([pageImageFromAsset(result.asset)]);
     } else {
       patchItem(key, { status: "error", error: result.error });
     }

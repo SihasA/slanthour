@@ -24,13 +24,27 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   SECTION_LABELS,
+  sectionImageCapacity,
   sectionImages,
+  trayImages,
   type PageDocument,
+  type PageImage,
   type Section,
 } from "@/lib/page-document";
+import { imageUrl } from "@/lib/media";
 import { SECTION_GROUPS, SECTION_DESCRIPTIONS, SectionGlyph } from "./section-meta";
 import { getTheme } from "@/themes/registry";
 import type { EditorAction } from "@/lib/editor/reducer";
+import { useImageDrag } from "./ImageDrag";
+import { MediaUploader } from "./MediaUploader";
+import { LibraryPicker } from "./LibraryPicker";
+
+function sectionFreeCapacity(section: Section): number {
+  const capacity = sectionImageCapacity(section.type);
+  if (capacity === 0) return 0;
+  if (capacity === Infinity) return Infinity;
+  return Math.max(0, capacity - sectionImages(section).length);
+}
 
 function summarize(section: Section): string {
   const count = sectionImages(section).length;
@@ -68,15 +82,27 @@ function SortableRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: section.id,
   });
+  const { overTarget, draggingId } = useImageDrag();
+  const droppable = draggingId !== null && sectionFreeCapacity(section) > 0;
+  const isDropOver = droppable && overTarget === `section:${section.id}`;
 
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`group border-b border-rule ${isDragging ? "opacity-60 z-10" : ""}`}
+      {...(droppable ? { "data-img-drop": `section:${section.id}` } : {})}
     >
       <div
-        className={`flex items-stretch ${selected ? "bg-surface" : "hover:bg-surface/60"} transition-colors`}
+        className={`flex items-stretch transition-colors ${
+          isDropOver
+            ? "bg-surface outline outline-1 -outline-offset-1 outline-accent"
+            : droppable
+              ? "bg-surface/40"
+              : selected
+                ? "bg-surface"
+                : "hover:bg-surface/60"
+        }`}
       >
         <button
           {...attributes}
@@ -120,22 +146,87 @@ function SortableRow({
   );
 }
 
+function TrayThumb({
+  image,
+  index,
+  sections,
+  dispatch,
+}: {
+  image: PageImage;
+  index: number;
+  sections: Section[];
+  dispatch: React.Dispatch<EditorAction>;
+}) {
+  const { startDrag, overTarget, draggingId } = useImageDrag();
+  const placeTargets = sections.filter((s) => sectionFreeCapacity(s) > 0);
+
+  return (
+    <div className="relative" data-img-drop={`tray:${index}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageUrl(image, "sm")}
+        alt={image.alt || image.caption || "Tray photo"}
+        loading="lazy"
+        draggable={false}
+        onPointerDown={(e) => startDrag(e, image, { kind: "tray" })}
+        className={`w-12 h-12 object-cover bg-surface cursor-grab touch-none select-none ${
+          draggingId === image.id ? "opacity-40" : ""
+        } ${overTarget === `tray:${index}` ? "outline outline-1 outline-accent" : ""}`}
+      />
+      <button
+        onClick={() => dispatch({ type: "removeFromTray", imageId: image.id })}
+        aria-label="Discard from page"
+        title="Removes the photo from this page. It stays in your library."
+        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-background border border-rule text-muted hover:text-red-400 hover:border-red-400 text-[10px] leading-none flex items-center justify-center"
+      >
+        ×
+      </button>
+      {/* Touch has no drag: a tiny placement menu instead (desktop drags). */}
+      {placeTargets.length > 0 && (
+        <select
+          value=""
+          onChange={(e) => {
+            if (e.target.value) dispatch({ type: "trayToSection", imageId: image.id, sectionId: e.target.value });
+          }}
+          aria-label="Place photo in a section"
+          className="lg:hidden mt-0.5 w-12 bg-transparent border border-rule text-[9px] text-muted py-0.5"
+        >
+          <option value="">Place…</option>
+          {placeTargets.map((s) => (
+            <option key={s.id} value={s.id}>
+              {SECTION_LABELS[s.type]} {sections.indexOf(s) + 1}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
 export function SectionList({
   document,
   selectedId,
   theme,
   dispatch,
   onSelect,
+  hiFiUploads = false,
+  pageCapacityLeft = Infinity,
 }: {
   document: PageDocument;
   selectedId: string | null;
   theme: string;
   dispatch: React.Dispatch<EditorAction>;
   onSelect?: () => void;
+  hiFiUploads?: boolean;
+  /** Photos still allowed on this page (plan limit minus everything placed + tray). */
+  pageCapacityLeft?: number;
 }) {
   // An empty page opens straight onto the add menu — the first decision
   // a new user has to make is the one the menu explains.
   const [adding, setAdding] = useState(document.sections.length === 0);
+  const [trayOpen, setTrayOpen] = useState(trayImages(document).length > 0);
+  const tray = trayImages(document);
+  const { overTarget, draggingId } = useImageDrag();
   const featured = getTheme(theme).featuredSections;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -180,6 +271,71 @@ export function SectionList({
               </ul>
             </SortableContext>
           </DndContext>
+        )}
+      </div>
+
+      {/* ── Tray: photos on the page, not yet placed ────────── */}
+      <div
+        className={`shrink-0 border-t border-rule ${
+          draggingId !== null && overTarget === "tray" ? "bg-surface" : ""
+        }`}
+        data-img-drop="tray"
+      >
+        <button
+          onClick={() => setTrayOpen((v) => !v)}
+          aria-expanded={trayOpen}
+          className="w-full flex items-center justify-between px-3 py-2 text-[10px] uppercase tracking-wide text-muted hover:text-foreground transition-colors"
+        >
+          <span>Tray{tray.length > 0 ? ` · ${tray.length}` : ""}</span>
+          <span aria-hidden>{trayOpen ? "▾" : "▸"}</span>
+        </button>
+        {trayOpen && (
+          <div className="px-3 pb-3">
+            {tray.length > 0 ? (
+              <div className="flex flex-wrap gap-2 mb-2.5">
+                {tray.map((image, index) => (
+                  <TrayThumb
+                    key={image.id}
+                    image={image}
+                    index={index}
+                    sections={document.sections}
+                    dispatch={dispatch}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] leading-snug text-muted font-copy mb-2">
+                Photos you upload here wait on the page until you place them. Drag one onto a
+                section, or use Fill to place them all in order.
+              </p>
+            )}
+            {tray.length > 0 && (
+              <button
+                onClick={() => dispatch({ type: "fillFromTray" })}
+                className="w-full mb-2 py-2 text-[10px] uppercase tracking-wide border border-rule hover:border-accent text-foreground transition-colors"
+                title="Places tray photos into your sections, top to bottom. Undo brings them back."
+              >
+                Fill sections in order
+              </button>
+            )}
+            <MediaUploader
+              compact
+              capacityLeft={pageCapacityLeft}
+              hiFi={hiFiUploads}
+              onUploaded={(images) => dispatch({ type: "addToTray", images })}
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <LibraryPicker
+                onPicked={(images) => dispatch({ type: "addToTray", images })}
+                capacityLeft={pageCapacityLeft}
+              />
+              {pageCapacityLeft !== Infinity && (
+                <span className="text-[10px] text-muted/70 font-copy">
+                  {pageCapacityLeft} left on this page
+                </span>
+              )}
+            </div>
+          </div>
         )}
       </div>
 

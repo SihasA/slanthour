@@ -215,3 +215,36 @@ describe("display settings", () => {
     });
   });
 });
+
+describe("tray", () => {
+  const rawImg = (n: number) => ({ id: `t${n}`, path: `u/m/a${n}/lg.jpg`, alt: "", caption: "" });
+
+  it("parses tray images and drops malformed entries", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      tray: [rawImg(1), { nope: true }, rawImg(2)],
+    });
+    expect(doc.tray?.map((i) => i.id)).toEqual(["t1", "t2"]);
+  });
+
+  it("omits the tray key when empty or absent", () => {
+    expect(parseDocument({ version: 1, sections: [] }).tray).toBeUndefined();
+    expect(parseDocument({ version: 1, sections: [], tray: [] }).tray).toBeUndefined();
+    expect(parseDocument({ version: 1, sections: [], tray: "junk" }).tray).toBeUndefined();
+  });
+
+  it("counts tray images toward the page image limit", () => {
+    const doc = parseDocument({ version: 1, sections: [], tray: [rawImg(1), rawImg(2)] });
+    expect(countImages(doc)).toBe(2);
+  });
+
+  it("collects asset ids from the tray", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      tray: [{ ...rawImg(1), assetId: "asset-9" }],
+    });
+    expect(collectAssetIds(doc).has("asset-9")).toBe(true);
+  });
+});

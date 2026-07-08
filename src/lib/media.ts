@@ -3,7 +3,8 @@
 // which responsive variants exist. Works in server and client components.
 
 import { MEDIA_BUCKET } from "./constants";
-import type { PageImage } from "./page-document";
+import { newSectionId, type PageImage } from "./page-document";
+import type { MediaAsset } from "@/types";
 
 export type MediaVariant = "xl" | "lg" | "md" | "sm";
 
@@ -54,6 +55,24 @@ export function imageSrcSet(
     if (image.hasXl && clampVariant("xl", max) === "xl") entries.push(`${imageUrl(image, "xl")} 2560w`);
   }
   return entries.join(", ");
+}
+
+/** A fresh document placement of a stored asset. Every placement gets its
+ * own id (and its own caption/alt/focal), so the same asset can appear in
+ * several sections or pages while being stored exactly once. */
+export function pageImageFromAsset(asset: MediaAsset): PageImage {
+  return {
+    id: newSectionId(),
+    assetId: asset.id,
+    path: asset.storage_path,
+    hasVariants: asset.has_variants,
+    hasXl: asset.has_xl,
+    width: asset.width,
+    height: asset.height,
+    alt: "",
+    caption: "",
+    blur: asset.blur_data_url,
+  };
 }
 
 /** URL for a bare storage path (page covers, avatars). */

@@ -148,6 +148,18 @@ export interface PageDocument {
   version: number;
   sections: Section[];
   settings?: PageDisplaySettings;
+  /**
+   * The page tray: photos uploaded to the page but not yet placed in a
+   * section. Absent when empty (older documents parse unchanged). Tray
+   * photos count toward the page image limit and are stripped from the
+   * published snapshot at publish time.
+   */
+  tray?: PageImage[];
+}
+
+/** Read a document's tray with the default applied. */
+export function trayImages(doc: PageDocument): PageImage[] {
+  return doc.tray ?? [];
 }
 
 /** Read a document's display settings with defaults applied. */
@@ -403,18 +415,23 @@ export function parseDocument(raw: unknown): PageDocument {
     sections.push(section);
   }
   const settings = sanitizeDisplaySettings(raw.settings);
-  return settings
-    ? { version: DOCUMENT_VERSION, sections, settings }
-    : { version: DOCUMENT_VERSION, sections };
+  const tray = sanitizeImages(raw.tray, 500);
+  const doc: PageDocument = { version: DOCUMENT_VERSION, sections };
+  if (settings) doc.settings = settings;
+  if (tray.length > 0) doc.tray = tray;
+  return doc;
 }
 
-/** All media_assets ids referenced by a document. */
+/** All media_assets ids referenced by a document (sections + tray). */
 export function collectAssetIds(doc: PageDocument): Set<string> {
   const ids = new Set<string>();
   for (const section of doc.sections) {
     for (const img of sectionImages(section)) {
       if (img.assetId) ids.add(img.assetId);
     }
+  }
+  for (const img of trayImages(doc)) {
+    if (img.assetId) ids.add(img.assetId);
   }
   return ids;
 }
@@ -428,7 +445,8 @@ export function firstImage(doc: PageDocument): PageImage | null {
   return null;
 }
 
-/** Count of images across the document (entitlement checks). */
+/** Count of images across the document, tray included, so the tray can
+ * never become storage beyond the page's image limit (entitlement checks). */
 export function countImages(doc: PageDocument): number {
-  return doc.sections.reduce((n, s) => n + sectionImages(s).length, 0);
+  return doc.sections.reduce((n, s) => n + sectionImages(s).length, 0) + trayImages(doc).length;
 }

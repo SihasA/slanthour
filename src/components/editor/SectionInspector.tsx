@@ -70,11 +70,14 @@ function Select({
 
 export function SectionInspector({
   section,
+  allSections = [],
   theme,
   dispatch,
   hiFiUploads = false,
 }: {
   section: Section | null;
+  /** Full section list, for cross-section photo moves. */
+  allSections?: Section[];
   theme: string;
   dispatch: React.Dispatch<EditorAction>;
   hiFiUploads?: boolean;
@@ -375,7 +378,7 @@ export function SectionInspector({
           <label className={fieldLabel}>
             {sectionImageCapacity(section.type) === 1 ? "Image" : "Images"}
           </label>
-          <ImageManager section={section} dispatch={dispatch} hiFiUploads={hiFiUploads} />
+          <ImageManager section={section} allSections={allSections} dispatch={dispatch} hiFiUploads={hiFiUploads} />
         </div>
       )}
     </div>

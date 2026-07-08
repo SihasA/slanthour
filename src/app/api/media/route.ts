@@ -20,6 +20,39 @@ export const runtime = "nodejs";
 
 const VARIANT_KEYS = ["lg", "md", "sm"] as const;
 
+// Library page size. Kept small and metadata-only on purpose: the browser
+// fetches rows here and lazy-loads sm thumbnails (~30KB each) as they
+// scroll into view, so opening the library costs kilobytes, not photos.
+const LIBRARY_PAGE_SIZE = 60;
+
+/** The caller's photo library, newest first, cursor-paginated. */
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+
+  const cursor = new URL(request.url).searchParams.get("cursor");
+
+  let query = supabase
+    .from("media_assets")
+    .select("id, storage_path, has_variants, has_xl, filename, width, height, blur_data_url, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(LIBRARY_PAGE_SIZE);
+  if (cursor) query = query.lt("created_at", cursor);
+
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: "Could not load your library." }, { status: 500 });
+
+  const assets = data ?? [];
+  const nextCursor =
+    assets.length === LIBRARY_PAGE_SIZE ? assets[assets.length - 1].created_at : null;
+  return NextResponse.json({ assets, nextCursor });
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {

@@ -11,6 +11,7 @@ import {
   sanitizeDisplaySettings,
   sectionImageCapacity,
   sectionImages,
+  trayImages,
   withSectionImages,
   type PageDisplaySettings,
   type PageDocument,
@@ -53,6 +54,13 @@ export type EditorAction =
   | { type: "removeImage"; sectionId: string; imageId: string }
   | { type: "moveImage"; sectionId: string; imageId: string; direction: -1 | 1 }
   | { type: "updateImage"; sectionId: string; imageId: string; patch: Partial<PageImage>; coalesceKey?: string }
+  | { type: "addToTray"; images: PageImage[] }
+  | { type: "removeFromTray"; imageId: string }
+  | { type: "reorderTray"; imageId: string; toIndex: number }
+  | { type: "trayToSection"; imageId: string; sectionId: string }
+  | { type: "sectionToTray"; sectionId: string; imageId: string }
+  | { type: "moveImageToSection"; fromSectionId: string; imageId: string; toSectionId: string }
+  | { type: "fillFromTray" }
   | { type: "setTitle"; title: string; coalesceKey?: string }
   | { type: "setDisplaySettings"; patch: Partial<PageDisplaySettings> }
   | { type: "setTheme"; theme: ThemeId }
@@ -101,6 +109,24 @@ function mapSection(
     ...document,
     sections: document.sections.map((s) => (s.id === id ? fn(s) : s)),
   };
+}
+
+/** Replace the tray, dropping the key when empty so untouched documents
+ * stay byte-identical with their pre-tray shape. */
+function withTray(document: PageDocument, tray: PageImage[]): PageDocument {
+  if (tray.length === 0) {
+    const { tray: _dropped, ...rest } = document;
+    return rest;
+  }
+  return { ...document, tray };
+}
+
+/** Free image slots in a section (0 for non-image sections). */
+function sectionFreeCapacity(section: Section): number {
+  const capacity = sectionImageCapacity(section.type);
+  if (capacity === 0) return 0;
+  if (capacity === Infinity) return Infinity;
+  return Math.max(0, capacity - sectionImages(section).length);
 }
 
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -214,6 +240,90 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       );
       const document = mapSection(doc, action.sectionId, (s) => withSectionImages(s, images));
       return commit(state, { ...content, document }, { coalesceKey: action.coalesceKey });
+    }
+
+    case "addToTray": {
+      if (action.images.length === 0) return state;
+      const document = withTray(doc, [...trayImages(doc), ...action.images]);
+      return commit(state, { ...content, document });
+    }
+
+    case "removeFromTray": {
+      const tray = trayImages(doc).filter((img) => img.id !== action.imageId);
+      if (tray.length === trayImages(doc).length) return state;
+      return commit(state, { ...content, document: withTray(doc, tray) });
+    }
+
+    case "reorderTray": {
+      const tray = [...trayImages(doc)];
+      const from = tray.findIndex((img) => img.id === action.imageId);
+      if (from === -1) return state;
+      const to = Math.max(0, Math.min(tray.length - 1, action.toIndex));
+      if (from === to) return state;
+      const [moved] = tray.splice(from, 1);
+      tray.splice(to, 0, moved);
+      return commit(state, { ...content, document: withTray(doc, tray) });
+    }
+
+    case "trayToSection": {
+      const image = trayImages(doc).find((img) => img.id === action.imageId);
+      const target = doc.sections.find((s) => s.id === action.sectionId);
+      if (!image || !target || sectionFreeCapacity(target) < 1) return state;
+      const tray = trayImages(doc).filter((img) => img.id !== action.imageId);
+      const document = withTray(
+        mapSection(doc, action.sectionId, (s) => withSectionImages(s, [...sectionImages(s), image])),
+        tray
+      );
+      return commit(state, { ...content, document }, { select: action.sectionId });
+    }
+
+    case "sectionToTray": {
+      const target = doc.sections.find((s) => s.id === action.sectionId);
+      if (!target) return state;
+      const image = sectionImages(target).find((img) => img.id === action.imageId);
+      if (!image) return state;
+      const remaining = sectionImages(target).filter((img) => img.id !== action.imageId);
+      const document = withTray(
+        mapSection(doc, action.sectionId, (s) => withSectionImages(s, remaining)),
+        [...trayImages(doc), image]
+      );
+      return commit(state, { ...content, document });
+    }
+
+    case "moveImageToSection": {
+      if (action.fromSectionId === action.toSectionId) return state;
+      const from = doc.sections.find((s) => s.id === action.fromSectionId);
+      const to = doc.sections.find((s) => s.id === action.toSectionId);
+      if (!from || !to || sectionFreeCapacity(to) < 1) return state;
+      const image = sectionImages(from).find((img) => img.id === action.imageId);
+      if (!image) return state;
+      let document = mapSection(doc, action.fromSectionId, (s) =>
+        withSectionImages(s, sectionImages(s).filter((img) => img.id !== action.imageId))
+      );
+      document = mapSection(document, action.toSectionId, (s) =>
+        withSectionImages(s, [...sectionImages(s), image])
+      );
+      return commit(state, { ...content, document }, { select: action.toSectionId });
+    }
+
+    case "fillFromTray": {
+      // One-shot flow: tray photos pour into sections top to bottom, each
+      // section taking up to its free capacity. Open-ended sections (grid,
+      // sheet, sequence) take everything left, so order matters and the
+      // whole fill is a single undo step. Never a live binding: captions
+      // and crops belong to placements, and reflows must not surprise.
+      const tray = [...trayImages(doc)];
+      if (tray.length === 0) return state;
+      const sections = doc.sections.map((section) => {
+        if (tray.length === 0) return section;
+        const free = sectionFreeCapacity(section);
+        if (free < 1) return section;
+        const taken = tray.splice(0, free === Infinity ? tray.length : free);
+        return withSectionImages(section, [...sectionImages(section), ...taken]);
+      });
+      if (tray.length === trayImages(doc).length) return state;
+      const document = withTray({ ...doc, sections }, tray);
+      return commit(state, { ...content, document });
     }
 
     case "setTitle":

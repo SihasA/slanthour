@@ -14,7 +14,7 @@ import {
   initialEditorState,
   type EditorContent,
 } from "@/lib/editor/reducer";
-import { displaySettings } from "@/lib/page-document";
+import { countImages, displaySettings } from "@/lib/page-document";
 import { savePageDraft, publishPage, unpublishPage } from "@/lib/actions/pages";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { PageRenderer } from "@/themes/PageRenderer";
@@ -24,6 +24,7 @@ import { SectionList } from "./SectionList";
 import { SectionInspector } from "./SectionInspector";
 import { ThemePanel } from "./ThemePanel";
 import { PagePanel } from "./PagePanel";
+import { ImageDragProvider } from "./ImageDrag";
 
 type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 type PanelId = "inspect" | "theme" | "page";
@@ -171,6 +172,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
     id === "inspect" ? (
       <SectionInspector
         section={selectedSection}
+        allSections={state.content.document.sections}
         theme={state.content.theme}
         dispatch={dispatch}
         hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
@@ -213,6 +215,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
 
   return (
     <div className="h-svh flex flex-col bg-background text-foreground">
+      <ImageDragProvider dispatch={dispatch}>
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="shrink-0 border-b border-rule px-3 sm:px-5 h-14 flex items-center gap-3">
         <Link
@@ -333,6 +336,11 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
             selectedId={state.selectedSectionId}
             theme={state.content.theme}
             dispatch={dispatch}
+            hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
+            pageCapacityLeft={Math.max(
+              0,
+              getProfileEntitlements(profile).maxImagesPerPage - countImages(state.content.document)
+            )}
           />
         </aside>
 
@@ -419,6 +427,12 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
                   theme={state.content.theme}
                   dispatch={dispatch}
                   onSelect={() => setMobilePanel("inspect")}
+                  hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
+                  pageCapacityLeft={Math.max(
+                    0,
+                    getProfileEntitlements(profile).maxImagesPerPage -
+                      countImages(state.content.document)
+                  )}
                 />
               ) : (
                 panelContent(mobilePanel)
@@ -427,6 +441,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
           </div>
         </div>
       )}
+      </ImageDragProvider>
     </div>
   );
 }

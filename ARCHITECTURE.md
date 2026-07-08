@@ -216,7 +216,18 @@ success it writes `{userId}/m/{assetId}/{lg,md,sm}.jpg` to storage and records a
 `media_assets` row; any failure rolls back. The endpoint is rate-limited.
 
 `DELETE /api/media/:id` refuses if any **published** snapshot still references the asset, so a
-delete can never break a live page. `src/lib/media.ts` resolves URLs and builds `srcset`;
+delete can never break a live page. `GET /api/media` returns the caller's library
+(metadata only, cursor-paginated 60 at a time) for the reuse picker; the same asset can be
+placed on many pages while stored once, since each placement is a fresh `PageImage` with its
+own caption/alt/focal.
+
+**Photo pool.** A document carries an optional `tray: PageImage[]` of photos uploaded to the
+page but not yet placed. The tray counts toward the page image limit (`countImages`), is
+stripped from the published snapshot in `publishPage` (unplaced photos never ship or cost
+egress), and drives the editor's drag-to-place flow. `ImageDrag.tsx` is a pointer-event drag
+layer (not dnd-kit, which already owns section-row sorting) moving photos between tray and
+sections; touch users get "Send to" / "Place" menus instead. `fillFromTray` is an explicit
+one-shot that pours the tray into sections in document order, never a live binding. `src/lib/media.ts` resolves URLs and builds `srcset`;
 `SmartImage` reserves aspect ratio (no layout shift), shows the blur placeholder, honours the
 focal point via `object-position`, lazy-loads below the fold, and opens the lightbox.
 
