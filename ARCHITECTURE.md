@@ -144,7 +144,11 @@ toggles) and a `resolveTokens()` that maps settings → `--sh-*` CSS variables.
 
 The registry (`src/themes/registry.ts`) is the single source of truth: `getTheme`,
 `isThemeId`, `defaultThemeSettings`, and `sanitizeThemeSettings` (safe across theme switches
-— unknown keys fall back to defaults). Renderers share primitives: `SmartImage`, `Lightbox`,
+— unknown keys fall back to defaults). It is also the *only* place theme validity is
+enforced: the database deliberately has no theme constraint (a hardcoded `pages.theme`
+CHECK silently broke draft saves for themes 6–8 and was dropped in migration
+`20260708100000`). Adding a theme therefore needs no migration, but theme QA must include
+switching a real page to the new theme and confirming the save lands on the hosted DB. Renderers share primitives: `SmartImage`, `Lightbox`,
 `Container`, `Reveal` (scroll reveal), `SpacerBlock`. `PageRenderer.tsx` is the single entry
 point used by both the editor preview and the published route.
 
