@@ -13,7 +13,7 @@ const RHYTHM_GAP: Record<string, string> = {
 export const monograph: ThemeDefinition = {
   id: "monograph",
   name: "Monograph",
-  description: "Editorial magazine layout — strong typography, generous whitespace, large images.",
+  description: "Editorial magazine layout: strong typography, generous whitespace, large images.",
   purpose: "Photography series, portfolios, essays, documentary and fine-art work.",
   featuredSections: ["hero", "image", "text", "heading", "quote", "split"],
   settingsSchema: [

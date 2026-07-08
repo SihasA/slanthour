@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   const limited = rateLimit("media-upload", user.id, 60, 60);
   if (!limited.allowed) {
     return NextResponse.json(
-      { error: "Too many uploads — wait a moment and try again." },
+      { error: "Too many uploads. Wait a moment and try again." },
       { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } }
     );
   }

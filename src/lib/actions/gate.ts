@@ -25,7 +25,7 @@ export async function unlockPage(pageId: string, password: string): Promise<Unlo
   const ip = (headerStore.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
   const limited = rateLimit("page-unlock", `${ip}:${pageId}`, 10, 60);
   if (!limited.allowed) {
-    return { ok: false, error: "Too many attempts — wait a minute and try again." };
+    return { ok: false, error: "Too many attempts. Wait a minute and try again." };
   }
 
   // Password pages are not anon-readable by design, so this lookup uses the

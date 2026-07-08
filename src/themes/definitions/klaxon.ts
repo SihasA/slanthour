@@ -8,7 +8,7 @@ export const klaxon: ThemeDefinition = {
   id: "klaxon",
   name: "Klaxon",
   description:
-    "Risograph zine — acid paper, ink outlines, index tags and headlines set like gig posters.",
+    "Risograph zine: acid paper, ink outlines, index tags and headlines set like gig posters.",
   purpose: "Street photography, music and nightlife, zines, graduation shows and loud projects.",
   featuredSections: ["grid", "heading", "sequence", "contact-sheet", "quote"],
   settingsSchema: [

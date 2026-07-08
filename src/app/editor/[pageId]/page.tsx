@@ -6,7 +6,7 @@ import { Editor } from "@/components/editor/Editor";
 import type { Page, Profile } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Editor — Slanthour",
+  title: "Editor · Slanthour",
   robots: { index: false },
 };
 

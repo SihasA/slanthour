@@ -13,7 +13,7 @@ const ACCENTS: Record<string, string> = {
 export const afterdark: ThemeDefinition = {
   id: "afterdark",
   name: "After Dark",
-  description: "Dark cinematic presentation — large frames, chapter cards, letterboxing, minimal interface.",
+  description: "Dark cinematic presentation: large frames, chapter cards, letterboxing, minimal interface.",
   purpose: "Cinematic and night photography, documentary, travel and dramatic visual narratives.",
   featuredSections: ["hero", "sequence", "heading", "image", "quote"],
   settingsSchema: [

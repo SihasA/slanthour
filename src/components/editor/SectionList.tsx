@@ -154,7 +154,7 @@ export function SectionList({
       <div className="flex-1 min-h-0 overflow-y-auto">
         {document.sections.length === 0 ? (
           <p className="p-4 text-[12px] text-muted font-copy">
-            No sections yet — add your first one below.
+            No sections yet. Add your first one below.
           </p>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

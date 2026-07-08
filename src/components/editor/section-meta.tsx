@@ -17,10 +17,10 @@ export const SECTION_GROUPS: { group: string; types: SectionType[] }[] = [
 
 export const SECTION_DESCRIPTIONS: Record<SectionType, string> = {
   hero: "Full-screen or banner opener with your title over the photo.",
-  image: "One photo — reading-column, wide, or full-bleed.",
+  image: "One photo: reading-column, wide, or full-bleed.",
   split: "Two photos side by side, matched to equal height.",
   row: "Three photos across, matched to equal height.",
-  grid: "Even columns of cropped thumbnails — you pick 2, 3 or 4 across.",
+  grid: "Even columns of cropped thumbnails; you pick 2, 3 or 4 across.",
   "contact-sheet": "A dense sheet of small frames, like a darkroom contact sheet.",
   sequence: "Photos one after another, each full width at its natural size.",
   text: "A paragraph or more of writing.",
@@ -35,7 +35,7 @@ export function sectionMobileNote(type: SectionType): string | null {
     case "split":
     case "row":
     case "sequence":
-      return "On phones these photos stack vertically, full width — check the Mobile preview.";
+      return "On phones these photos stack vertically, full width. Check the Mobile preview.";
     case "grid":
     case "contact-sheet":
       return "On phones this stays a grid of smaller thumbnails.";

@@ -85,7 +85,7 @@ export function SectionInspector({
   if (!section) {
     return (
       <p className="text-[12px] text-muted font-copy leading-relaxed">
-        Nothing selected. A page is a stack of sections — photos, headings, text — added from
+        Nothing selected. A page is a stack of sections (photos, headings, text) added from
         the section list. Select one there to edit it.
       </p>
     );
@@ -342,7 +342,7 @@ export function SectionInspector({
                     // Refuse silently-destructive conversions; the note guides the user.
                     setConvertError({
                       id: section.id,
-                      message: `${SECTION_LABELS[t]} holds ${capacity} image${capacity === 1 ? "" : "s"} — remove ${count - capacity} first.`,
+                      message: `${SECTION_LABELS[t]} holds ${capacity} image${capacity === 1 ? "" : "s"}. Remove ${count - capacity} first.`,
                     });
                     return;
                   }

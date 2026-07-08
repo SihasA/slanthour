@@ -145,7 +145,7 @@ export function ProfileSettingsForm({ profile }: { profile: Profile }) {
         )}
         {username !== profile.username && usernameCheck.ok && (
           <p className="mt-1.5 text-[11px] text-muted font-copy">
-            Changing your username changes every page address — old links stop working.
+            Changing your username changes every page address; old links stop working.
           </p>
         )}
       </div>

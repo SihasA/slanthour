@@ -39,10 +39,10 @@ const loadProfile = cache(async (username: string) => {
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
   const { username } = await params;
   const loaded = await loadProfile(username);
-  if (!loaded) return { title: "Not found — Slanthour" };
+  if (!loaded) return { title: "Not found · Slanthour" };
   const { profile } = loaded;
   return {
-    title: `${profile.display_name} — Slanthour`,
+    title: `${profile.display_name} · Slanthour`,
     description: profile.bio ?? `${profile.display_name}'s pages on Slanthour.`,
     openGraph: {
       title: profile.display_name,
