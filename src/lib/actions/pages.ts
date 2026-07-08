@@ -24,6 +24,7 @@ import {
 } from "@/lib/page-document";
 import { MEDIA_BUCKET } from "@/lib/constants";
 import { getProfileEntitlements } from "@/lib/entitlements";
+import { createTemplateDocument, isTemplateId } from "@/lib/page-templates";
 import { hashPagePassword } from "@/lib/page-password";
 import {
   slugify,
@@ -124,7 +125,10 @@ async function uniqueSlugFor(
 
 // ─── Create / duplicate / delete ─────────────────────────────────────
 
-export async function createPage(rawTitle: string): Promise<ActionResult<{ pageId: string }>> {
+export async function createPage(
+  rawTitle: string,
+  templateId?: string
+): Promise<ActionResult<{ pageId: string }>> {
   const ctx = await requireUser();
   if (!ctx) return err("Your session has expired. Sign in again.");
   const { supabase, user } = ctx;
@@ -152,7 +156,10 @@ export async function createPage(rawTitle: string): Promise<ActionResult<{ pageI
       title,
       theme: DEFAULT_THEME,
       theme_settings: defaultThemeSettings(DEFAULT_THEME),
-      draft: createEmptyDocument(),
+      // Unknown template ids fall back to blank rather than erroring: the
+      // id only ever comes from our own picker, so a mismatch means a
+      // stale client, not a user mistake worth surfacing.
+      draft: isTemplateId(templateId) ? createTemplateDocument(templateId) : createEmptyDocument(),
     })
     .select("id")
     .single();
