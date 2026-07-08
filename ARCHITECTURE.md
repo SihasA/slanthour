@@ -83,7 +83,11 @@ A `PageDocument` is a versioned, ordered list of **sections**. Eleven section ty
 `path`, dimensions, `alt`, `caption`, optional `focal` point, `blur`).
 
 Every section and image carries a **stable id** so reorders, undo/redo, and republish never
-disturb identity. The module also exports pure helpers (`collectAssetIds`, `firstImage`,
+disturb identity. The document also carries optional page-level **display settings**
+(`protectPhotos` blocks right-click/drag on photos; `maxPhotoRes: "md"` caps the served
+variant at 1000px), available on every tier, sanitised like everything else and frozen
+into the published snapshot; SmartImage and the Lightbox read them through a context
+provided by PageRenderer. The module also exports pure helpers (`collectAssetIds`, `firstImage`,
 `countImages`, `sectionImages`, capacity rules) and, crucially, **sanitisers** that parse
 untrusted jsonb without throwing — the render path can never crash on a malformed document.
 
@@ -140,7 +144,11 @@ toggles) and a `resolveTokens()` that maps settings → `--sh-*` CSS variables.
 
 The registry (`src/themes/registry.ts`) is the single source of truth: `getTheme`,
 `isThemeId`, `defaultThemeSettings`, and `sanitizeThemeSettings` (safe across theme switches
-— unknown keys fall back to defaults). Renderers share primitives: `SmartImage`, `Lightbox`,
+— unknown keys fall back to defaults). It is also the *only* place theme validity is
+enforced: the database deliberately has no theme constraint (a hardcoded `pages.theme`
+CHECK silently broke draft saves for themes 6–8 and was dropped in migration
+`20260708100000`). Adding a theme therefore needs no migration, but theme QA must include
+switching a real page to the new theme and confirming the save lands on the hosted DB. Renderers share primitives: `SmartImage`, `Lightbox`,
 `Container`, `Reveal` (scroll reveal), `SpacerBlock`. `PageRenderer.tsx` is the single entry
 point used by both the editor preview and the published route.
 

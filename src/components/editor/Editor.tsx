@@ -14,6 +14,7 @@ import {
   initialEditorState,
   type EditorContent,
 } from "@/lib/editor/reducer";
+import { displaySettings } from "@/lib/page-document";
 import { savePageDraft, publishPage, unpublishPage } from "@/lib/actions/pages";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { PageRenderer } from "@/themes/PageRenderer";
@@ -188,6 +189,8 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
         onTitleChange={(title) =>
           dispatch({ type: "setTitle", title, coalesceKey: "page-title" })
         }
+        display={displaySettings(state.content.document)}
+        onDisplayChange={(patch) => dispatch({ type: "setDisplaySettings", patch })}
         onUnpublish={handleUnpublish}
         onDeleteNavigate={() => router.push("/dashboard")}
       />

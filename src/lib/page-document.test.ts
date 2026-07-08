@@ -3,6 +3,7 @@ import {
   collectAssetIds,
   countImages,
   createEmptyDocument,
+  displaySettings,
   createSection,
   firstImage,
   parseDocument,
@@ -179,5 +180,38 @@ describe("document queries", () => {
 
   it("countImages counts across all sections", () => {
     expect(countImages({ version: 1, sections: build() })).toBe(4);
+  });
+});
+
+describe("display settings", () => {
+  it("parses valid settings and applies defaults to bad fields", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      settings: { protectPhotos: true, maxPhotoRes: "huge" },
+    });
+    expect(doc.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full" });
+  });
+
+  it("keeps a non-default serving cap", () => {
+    const doc = parseDocument({ version: 1, sections: [], settings: { maxPhotoRes: "md" } });
+    expect(doc.settings).toEqual({ protectPhotos: false, maxPhotoRes: "md" });
+  });
+
+  it("collapses all-default settings to absent", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      settings: { protectPhotos: false, maxPhotoRes: "full" },
+    });
+    expect(doc.settings).toBeUndefined();
+    expect(parseDocument({ version: 1, sections: [], settings: "garbage" }).settings).toBeUndefined();
+  });
+
+  it("reads defaults through displaySettings()", () => {
+    expect(displaySettings(createEmptyDocument())).toEqual({
+      protectPhotos: false,
+      maxPhotoRes: "full",
+    });
   });
 });

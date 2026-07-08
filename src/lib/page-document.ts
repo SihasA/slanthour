@@ -127,9 +127,32 @@ export type Section =
   | QuoteSection
   | SpacerSection;
 
+/**
+ * Page-level display settings. Live inside the document so they freeze into
+ * the published snapshot like everything else; absent means all defaults
+ * (older documents parse unchanged). Available on every tier by design.
+ */
+export interface PageDisplaySettings {
+  /** Block right-click and drag on photos. Deters casual copying only. */
+  protectPhotos: boolean;
+  /** Largest variant served to visitors: "md" caps files at 1000px. */
+  maxPhotoRes: "full" | "md";
+}
+
+export const DEFAULT_DISPLAY_SETTINGS: PageDisplaySettings = {
+  protectPhotos: false,
+  maxPhotoRes: "full",
+};
+
 export interface PageDocument {
   version: number;
   sections: Section[];
+  settings?: PageDisplaySettings;
+}
+
+/** Read a document's display settings with defaults applied. */
+export function displaySettings(doc: PageDocument): PageDisplaySettings {
+  return doc.settings ?? DEFAULT_DISPLAY_SETTINGS;
 }
 
 /** Frozen snapshot written on publish; the only thing public routes read. */
@@ -349,6 +372,17 @@ export function sanitizeSection(raw: unknown): Section | null {
   }
 }
 
+/** Sanitize display settings; returns undefined when everything is default. */
+export function sanitizeDisplaySettings(v: unknown): PageDisplaySettings | undefined {
+  if (!isRecord(v)) return undefined;
+  const settings: PageDisplaySettings = {
+    protectPhotos: v.protectPhotos === true,
+    maxPhotoRes: oneOf(v.maxPhotoRes, ["full", "md"] as const, "full"),
+  };
+  const isDefault = !settings.protectPhotos && settings.maxPhotoRes === "full";
+  return isDefault ? undefined : settings;
+}
+
 /**
  * Parse + migrate an untrusted document (from the DB or a save request) into
  * the current version. Unknown sections are dropped, malformed fields
@@ -368,7 +402,10 @@ export function parseDocument(raw: unknown): PageDocument {
     seen.add(section.id);
     sections.push(section);
   }
-  return { version: DOCUMENT_VERSION, sections };
+  const settings = sanitizeDisplaySettings(raw.settings);
+  return settings
+    ? { version: DOCUMENT_VERSION, sections, settings }
+    : { version: DOCUMENT_VERSION, sections };
 }
 
 /** All media_assets ids referenced by a document. */

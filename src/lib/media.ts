@@ -7,6 +7,14 @@ import type { PageImage } from "./page-document";
 
 export type MediaVariant = "xl" | "lg" | "md" | "sm";
 
+const VARIANT_SIZE: Record<MediaVariant, number> = { sm: 480, md: 1000, lg: 2000, xl: 2560 };
+
+/** Clamp a requested variant to a page's serving cap (no cap = unchanged). */
+export function clampVariant(variant: MediaVariant, max?: MediaVariant): MediaVariant {
+  if (!max) return variant;
+  return VARIANT_SIZE[variant] > VARIANT_SIZE[max] ? max : variant;
+}
+
 function publicUrl(path: string): string {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${MEDIA_BUCKET}/${path}`;
 }
@@ -31,19 +39,20 @@ export function imageUrl(
   return publicUrl(variantPath(image.path, v));
 }
 
-/** srcSet string for responsive rendering (only when variants exist). */
+/** srcSet string for responsive rendering (only when variants exist).
+ * `max` caps the largest variant offered (page-level serving cap). */
 export function imageSrcSet(
-  image: Pick<PageImage, "path" | "hasVariants" | "hasXl" | "width">
+  image: Pick<PageImage, "path" | "hasVariants" | "hasXl" | "width">,
+  max?: MediaVariant
 ): string | undefined {
   if (image.path.startsWith("http") || image.path.startsWith("/") || !image.hasVariants) return undefined;
   const w = image.width ?? 2000;
-  const entries = [
-    `${imageUrl(image, "sm")} 480w`,
-    `${imageUrl(image, "md")} 1000w`,
-    `${imageUrl(image, "lg")} ${Math.min(w, 2000)}w`,
-  ];
-  // width/height describe the lg variant; the xl file is 2560 on its long edge.
-  if (image.hasXl) entries.push(`${imageUrl(image, "xl")} 2560w`);
+  const entries = [`${imageUrl(image, "sm")} 480w`, `${imageUrl(image, "md")} 1000w`];
+  if (clampVariant("lg", max) === "lg") {
+    entries.push(`${imageUrl(image, "lg")} ${Math.min(w, 2000)}w`);
+    // width/height describe the lg variant; the xl file is 2560 on its long edge.
+    if (image.hasXl && clampVariant("xl", max) === "xl") entries.push(`${imageUrl(image, "xl")} 2560w`);
+  }
   return entries.join(", ");
 }
 
