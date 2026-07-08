@@ -6,9 +6,14 @@ import { getProfileEntitlements, resolveTier } from "@/lib/entitlements";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import type { Tier } from "@/types";
 
-export const metadata: Metadata = { title: "Account settings — Slanthour" };
+export const metadata: Metadata = { title: "Account settings · Slanthour" };
 
-const TIER_LABEL: Record<Tier, string> = { free: "Free", pro: "Pro", studio: "Studio" };
+const TIER_LABEL: Record<Tier, string> = {
+  free: "Free",
+  hobby: "Hobby",
+  pro: "Pro",
+  studio: "Studio",
+};
 
 export default async function AccountSettingsPage() {
   const supabase = await createClient();
@@ -44,7 +49,7 @@ export default async function AccountSettingsPage() {
         </p>
         {tier === "free" && (
           <p className="mt-3 font-copy text-[13px] text-muted/80 leading-relaxed">
-            Paid plans are coming soon — everything stays free while billing is being finished.{" "}
+            Paid plans are coming soon. Everything stays free while billing is being finished.{" "}
             <Link
               href="/pricing"
               className="underline underline-offset-2 hover:text-accent transition-colors"

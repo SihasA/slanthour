@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: "Do I keep ownership of my photos?",
-    a: "Always. Publishing here grants Slanthour no rights beyond serving your page. Slanthour stores presentation copies — keep your originals as you always would.",
+    a: "Always. Publishing here grants Slanthour no rights beyond serving your page. Slanthour stores presentation copies, so keep your originals as you always would.",
   },
   {
     q: "Who can see my pages?",
@@ -37,11 +37,11 @@ const FAQS = [
   },
   {
     q: "What happens if I stop paying?",
-    a: "Nothing you’ve published comes down. A lapsed plan returns you to the free tier’s limits for new pages — and a Keepsake page stays up regardless; that is the point of it.",
+    a: "Nothing you’ve published comes down. A lapsed plan returns you to the free tier’s limits for new pages, and a Keepsake page stays up regardless; that is the point of it.",
   },
   {
     q: "Will this site still be here in five years?",
-    a: "Slanthour is deliberately small and inexpensive to run. The Keepsake promise — ten years in writing, a downloadable archive, a year’s notice if we ever wind down — is in the terms.",
+    a: "Slanthour is deliberately small and inexpensive to run. The Keepsake promise is in the terms: ten years in writing, a downloadable archive, and a year’s notice if we ever wind down.",
   },
 ];
 
@@ -52,7 +52,7 @@ const JSON_LD = {
   url: "https://slanthour.com",
   applicationCategory: "DesignApplication",
   description:
-    "Turns collections of photographs into designed, shareable web pages — a designed object, not a feed.",
+    "Turns collections of photographs into designed, shareable web pages: a designed object, not a feed.",
   offers: [
     { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
     { "@type": "Offer", name: "Pro", price: "7", priceCurrency: "USD" },
@@ -173,7 +173,7 @@ export default function LandingPage() {
             style={{ "--rise-delay": "340ms" } as React.CSSProperties}
           >
             Turn photographs, memories and visual projects into a beautifully designed page on
-            the web — a designed object, not a feed.
+            the web: a designed object, not a feed.
           </p>
           <div
             className="flex flex-wrap items-center gap-6 rise-in"
@@ -210,7 +210,7 @@ export default function LandingPage() {
               />
             </div>
             <p className="mt-2 text-[9px] uppercase tracking-wide text-muted/60 font-body">
-              № 01 — from the live demo
+              № 01 · from the live demo
             </p>
           </div>
         </div>
@@ -304,14 +304,14 @@ export default function LandingPage() {
               <Step
                 n="01"
                 title="Upload photographs"
-                text="Drag in a collection — a trip, a series, a person, a year. Photos are resized and presented properly, with location data stripped for privacy."
+                text="Drag in a collection: a trip, a series, a person, a year. Photos are resized and presented properly, with location data stripped for privacy."
               />
             </Reveal>
             <Reveal delay={130}>
               <Step
                 n="02"
                 title="Arrange and design"
-                text="Build the page from sections — heroes, grids, contact sheets, text, quotes. Pick a theme and tune it. Everything autosaves."
+                text="Build the page from sections: heroes, grids, contact sheets, text, quotes. Pick a theme and tune it. Everything autosaves."
               />
             </Reveal>
             <Reveal delay={260}>
@@ -336,7 +336,7 @@ export default function LandingPage() {
             <p className="font-copy text-[17px] text-muted leading-loose">
               Slanthour is not a social network, a website builder or a backup drive. It does one
               thing: it turns a collection of photographs into a page that feels deliberately
-              designed — like a book, printed for the web.
+              designed, like a book printed for the web.
             </p>
           </Reveal>
           <Reveal delay={140}>
@@ -363,16 +363,17 @@ export default function LandingPage() {
               Design freely. Publish when it&apos;s ready.
             </h2>
             <p className="font-copy text-[17px] text-muted leading-loose">
-              The editor is always free — build and preview as many drafts as you like. A free
-              account publishes five pages, each carrying one quiet &ldquo;Made with
-              Slanthour&rdquo; line. Pro removes it and adds high-fidelity images and private
-              view counts. And for a page that should outlive any subscription, a Keepsake page
+              The editor is always free: build and preview as many drafts as you like. A free
+              account publishes three pages, each carrying one quiet &ldquo;Made with
+              Slanthour&rdquo; line. Hobby removes the line for a small yearly fee; Pro adds
+              high-fidelity images and private view counts. And for a page that should outlive any subscription, a Keepsake page
               is a single payment, kept published for at least ten years.
             </p>
           </Reveal>
           <Reveal delay={140}>
             <ul className="border-t border-rule mb-8">
-              <PriceRow name="Free" price="$0" note="5 pages · all themes · quiet badge" />
+              <PriceRow name="Free" price="$0" note="3 pages · all themes · quiet badge" />
+              <PriceRow name="Hobby" price="$36/yr" note="10 pages · no badge · for the love of it" />
               <PriceRow
                 name="Pro"
                 price="$7/mo"
@@ -381,7 +382,7 @@ export default function LandingPage() {
               <PriceRow
                 name="Keepsake page"
                 price="$39 once"
-                note="one page · ten years guaranteed · archive download"
+                note="one page · ten years in writing · archive download"
               />
             </ul>
             <div className="flex flex-col items-start gap-5">
