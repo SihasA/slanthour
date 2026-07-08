@@ -230,3 +230,115 @@ describe("theme switching", () => {
     expect(state.content.themeSettings.paper).toBe("light"); // invalid → default
   });
 });
+
+describe("display settings", () => {
+  it("sets, patches and collapses back to absent", () => {
+    let state = freshState();
+    state = editorReducer(state, { type: "setDisplaySettings", patch: { protectPhotos: true } });
+    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full" });
+
+    state = editorReducer(state, { type: "setDisplaySettings", patch: { maxPhotoRes: "md" } });
+    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "md" });
+
+    state = editorReducer(state, {
+      type: "setDisplaySettings",
+      patch: { protectPhotos: false, maxPhotoRes: "full" },
+    });
+    expect(state.content.document.settings).toBeUndefined();
+  });
+
+  it("participates in undo", () => {
+    let state = freshState();
+    state = editorReducer(state, { type: "setDisplaySettings", patch: { protectPhotos: true } });
+    state = editorReducer(state, { type: "undo" });
+    expect(state.content.document.settings).toBeUndefined();
+  });
+});
+
+describe("tray and cross-section moves", () => {
+  function stateWithHeroAndGrid() {
+    let state = freshState();
+    state = editorReducer(state, { type: "addSection", sectionType: "hero" });
+    state = editorReducer(state, { type: "addSection", sectionType: "grid" });
+    return state;
+  }
+  const trayImgs = (state: EditorState) => state.content.document.tray ?? [];
+
+  it("adds to the tray and moves tray photos into sections, capacity-aware", () => {
+    let state = stateWithHeroAndGrid();
+    const [hero] = state.content.document.sections;
+    const a = img("u/m/a/lg.jpg");
+    const b = img("u/m/b/lg.jpg");
+    state = editorReducer(state, { type: "addToTray", images: [a, b] });
+    expect(trayImgs(state)).toHaveLength(2);
+
+    state = editorReducer(state, { type: "trayToSection", imageId: a.id, sectionId: hero.id });
+    expect(trayImgs(state)).toHaveLength(1);
+    expect(sectionImages(state.content.document.sections[0])).toHaveLength(1);
+
+    // Hero is now full: the second move is a no-op.
+    const before = state;
+    state = editorReducer(state, { type: "trayToSection", imageId: b.id, sectionId: hero.id });
+    expect(state).toBe(before);
+  });
+
+  it("returns a section image to the tray", () => {
+    let state = stateWithHeroAndGrid();
+    const [hero] = state.content.document.sections;
+    const a = img();
+    state = editorReducer(state, { type: "addImages", sectionId: hero.id, images: [a] });
+    state = editorReducer(state, { type: "sectionToTray", sectionId: hero.id, imageId: a.id });
+    expect(sectionImages(state.content.document.sections[0])).toHaveLength(0);
+    expect(trayImgs(state).map((i) => i.id)).toEqual([a.id]);
+  });
+
+  it("moves an image directly between sections, capacity-aware", () => {
+    let state = stateWithHeroAndGrid();
+    const [hero, grid] = state.content.document.sections;
+    const a = img();
+    const b = img("u/m/b/lg.jpg");
+    state = editorReducer(state, { type: "addImages", sectionId: grid.id, images: [a, b] });
+    state = editorReducer(state, {
+      type: "moveImageToSection", fromSectionId: grid.id, imageId: a.id, toSectionId: hero.id,
+    });
+    expect(sectionImages(state.content.document.sections[0]).map((i) => i.id)).toEqual([a.id]);
+    expect(sectionImages(state.content.document.sections[1]).map((i) => i.id)).toEqual([b.id]);
+
+    // Hero full: moving b too is a no-op.
+    const before = state;
+    state = editorReducer(state, {
+      type: "moveImageToSection", fromSectionId: grid.id, imageId: b.id, toSectionId: hero.id,
+    });
+    expect(state).toBe(before);
+  });
+
+  it("reorders the tray", () => {
+    let state = freshState();
+    const a = img();
+    const b = img("u/m/b/lg.jpg");
+    state = editorReducer(state, { type: "addToTray", images: [a, b] });
+    state = editorReducer(state, { type: "reorderTray", imageId: b.id, toIndex: 0 });
+    expect(trayImgs(state).map((i) => i.id)).toEqual([b.id, a.id]);
+  });
+
+  it("fills sections top to bottom in one undo step", () => {
+    let state = freshState();
+    state = editorReducer(state, { type: "addSection", sectionType: "hero" });
+    state = editorReducer(state, { type: "addSection", sectionType: "split" });
+    state = editorReducer(state, { type: "addSection", sectionType: "grid" });
+    const photos = Array.from({ length: 6 }, (_, i) => img(`u/m/p${i}/lg.jpg`));
+    state = editorReducer(state, { type: "addToTray", images: photos });
+    state = editorReducer(state, { type: "fillFromTray" });
+
+    const [hero, split, grid] = state.content.document.sections;
+    expect(sectionImages(hero)).toHaveLength(1);
+    expect(sectionImages(split)).toHaveLength(2);
+    expect(sectionImages(grid)).toHaveLength(3); // open-ended: takes the rest
+    expect(trayImgs(state)).toHaveLength(0);
+    expect(state.content.document.tray).toBeUndefined();
+
+    state = editorReducer(state, { type: "undo" });
+    expect(trayImgs(state)).toHaveLength(6);
+    expect(sectionImages(state.content.document.sections[0])).toHaveLength(0);
+  });
+});

@@ -56,7 +56,7 @@ export function ThemePanel({
           })}
         </div>
         <p className="mt-2 text-[11px] text-muted font-copy">
-          Switching themes restyles the page — your sections and photos stay exactly as they are.
+          Switching themes restyles the page; your sections and photos stay exactly as they are.
         </p>
       </div>
 

@@ -6,6 +6,7 @@ describe("resolveTier", () => {
   const past = new Date(Date.now() - 86_400_000).toISOString();
 
   it("passes through active paid tiers", () => {
+    expect(resolveTier("hobby", future)).toBe("hobby");
     expect(resolveTier("pro", future)).toBe("pro");
     expect(resolveTier("studio", future)).toBe("studio");
   });
@@ -16,6 +17,7 @@ describe("resolveTier", () => {
   });
 
   it("lapses expired paid tiers to free", () => {
+    expect(resolveTier("hobby", past)).toBe("free");
     expect(resolveTier("pro", past)).toBe("free");
     expect(resolveTier("studio", past)).toBe("free");
   });
@@ -38,6 +40,12 @@ describe("entitlements", () => {
     expect(free.hiFiUploads).toBe(false);
     expect(free.analytics).toBe(false);
 
+    // Hobby buys badge removal only; pro tooling stays with Pro and Studio.
+    const hobby = getEntitlements("hobby");
+    expect(hobby.removeBadge).toBe(true);
+    expect(hobby.hiFiUploads).toBe(false);
+    expect(hobby.analytics).toBe(false);
+
     for (const tier of ["pro", "studio"] as const) {
       const e = getEntitlements(tier);
       expect(e.removeBadge).toBe(true);
@@ -46,8 +54,17 @@ describe("entitlements", () => {
     }
   });
 
+  it("steps limits up the ladder", () => {
+    const ladder = (["free", "hobby", "pro", "studio"] as const).map(getEntitlements);
+    for (let i = 1; i < ladder.length; i++) {
+      expect(ladder[i].maxPages).toBeGreaterThan(ladder[i - 1].maxPages);
+      expect(ladder[i].maxImagesPerPage).toBeGreaterThan(ladder[i - 1].maxImagesPerPage);
+    }
+  });
+
   it("keeps publishing open on every tier", () => {
     expect(getEntitlements("free").canPublish).toBe(true);
+    expect(getEntitlements("hobby").canPublish).toBe(true);
     expect(getEntitlements("pro").canPublish).toBe(true);
     expect(getEntitlements("studio").canPublish).toBe(true);
   });
@@ -56,6 +73,6 @@ describe("entitlements", () => {
     const past = new Date(Date.now() - 1000).toISOString();
     expect(getProfileEntitlements({ tier: "pro", tier_expires_at: past }).hiFiUploads).toBe(false);
     expect(getProfileEntitlements({ tier: "pro", tier_expires_at: null }).hiFiUploads).toBe(true);
-    expect(getProfileEntitlements(null).maxPages).toBe(5);
+    expect(getProfileEntitlements(null).maxPages).toBe(3);
   });
 });

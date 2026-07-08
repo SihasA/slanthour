@@ -7,8 +7,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { PageImage } from "@/lib/page-document";
-import { imageSrcSet, imageUrl } from "@/lib/media";
+import { clampVariant, imageSrcSet, imageUrl } from "@/lib/media";
 import { useLightbox } from "./Lightbox";
+import { servingCap, usePageDisplay } from "./PageDisplay";
 
 export interface SmartImageProps {
   image: PageImage;
@@ -40,8 +41,16 @@ export function SmartImage({
   rounded,
 }: SmartImageProps) {
   const { open, enabled } = useLightbox();
+  const display = usePageDisplay();
+  const cap = servingCap(display);
   const [loaded, setLoaded] = useState(false);
   const imgEl = useRef<HTMLImageElement | null>(null);
+
+  // Deters casual copying only (page setting); the drag block below is
+  // unconditional and always was.
+  const blockMenu = display.protectPhotos
+    ? (e: React.MouseEvent) => e.preventDefault()
+    : undefined;
 
   // React's synthetic `onLoad` is unreliable for server-rendered images: the
   // browser starts (and often finishes) the download from the SSR HTML before
@@ -76,8 +85,8 @@ export function SmartImage({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       ref={imgEl}
-      src={imageUrl(image, "lg")}
-      srcSet={imageSrcSet(image)}
+      src={imageUrl(image, clampVariant("lg", cap))}
+      srcSet={imageSrcSet(image, cap)}
       sizes={sizes}
       alt={image.alt || image.caption || ""}
       width={image.width ?? undefined}
@@ -105,7 +114,11 @@ export function SmartImage({
 
   if (!enabled) {
     return (
-      <div className={`relative overflow-hidden ${fillClass} ${rounded ?? ""} ${className}`} style={wrapperStyle}>
+      <div
+        className={`relative overflow-hidden ${fillClass} ${rounded ?? ""} ${className}`}
+        style={wrapperStyle}
+        onContextMenu={blockMenu}
+      >
         {img}
       </div>
     );
@@ -115,6 +128,7 @@ export function SmartImage({
     <button
       type="button"
       onClick={() => open(image, group ?? [image])}
+      onContextMenu={blockMenu}
       aria-label={`View photograph${image.caption ? `: ${image.caption}` : ""}`}
       className={`relative block w-full overflow-hidden cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sh-accent)] ${fillClass} ${rounded ?? ""} ${className}`}
       style={wrapperStyle}

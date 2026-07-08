@@ -170,7 +170,7 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ page
   const { data: profile } = await supabase
     .from("profiles").select("tier, tier_expires_at").eq("id", user.id).single();
   if ((await countablePages(supabase, user.id)) >= getProfileEntitlements(profile).maxPages)
-    return err("Page limit reached — delete a page before duplicating.");
+    return err("Page limit reached. Delete a page before duplicating.");
 
   // Fresh section/image ids; assetIds intentionally shared (same underlying files).
   const doc = parseDocument(page.draft);
@@ -394,9 +394,13 @@ export async function publishPage(pageId: string): Promise<ActionResult<{ url: s
   if (!getProfileEntitlements(profile).canPublish)
     return err("Your plan does not include publishing.");
 
+  // The tray never publishes: unplaced photos would otherwise ride along in
+  // the page payload (leaking drafts and paying egress for nothing).
+  const { tray: _tray, ...publishedDocument } = document;
+
   const snapshot: PublishedSnapshot = {
     snapshotVersion: 1,
-    document,
+    document: publishedDocument,
     theme: page.theme,
     themeSettings: sanitizeThemeSettings(page.theme, page.theme_settings),
     title: page.title,

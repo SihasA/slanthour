@@ -9,8 +9,9 @@
 import { getTheme, sanitizeThemeSettings, themeCssVars } from "./registry";
 import { THEME_RENDERERS } from "./renderers";
 import { LightboxProvider } from "./shared/Lightbox";
+import { PageDisplayProvider } from "./shared/PageDisplay";
 import type { ThemeRenderProps } from "./types";
-import type { PageDocument } from "@/lib/page-document";
+import { displaySettings, type PageDocument } from "@/lib/page-document";
 
 export interface PageRendererProps {
   document: PageDocument;
@@ -48,15 +49,17 @@ export function PageRenderer({
         fontFamily: "var(--sh-body)",
       }}
     >
-      <LightboxProvider enabled={lightbox}>
-        <Renderer
-          document={document}
-          settings={settings}
-          title={title}
-          author={author}
-          mode={mode}
-        />
-      </LightboxProvider>
+      <PageDisplayProvider value={displaySettings(document)}>
+        <LightboxProvider enabled={lightbox}>
+          <Renderer
+            document={document}
+            settings={settings}
+            title={title}
+            author={author}
+            mode={mode}
+          />
+        </LightboxProvider>
+      </PageDisplayProvider>
     </div>
   );
 }

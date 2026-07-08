@@ -6,7 +6,7 @@ const GROTESK = "var(--font-space-grotesk), sans-serif";
 export const roll36: ThemeDefinition = {
   id: "roll36",
   name: "Roll 36",
-  description: "Contact-sheet and film-roll presentation — dense, organised grids with frame numbers and archival annotations.",
+  description: "Contact-sheet and film-roll presentation: dense, organised grids with frame numbers and archival annotations.",
   purpose: "Street and film photography, event sequences, chronological and dense collections.",
   featuredSections: ["contact-sheet", "grid", "row", "heading", "text"],
   settingsSchema: [

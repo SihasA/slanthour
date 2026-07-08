@@ -2,14 +2,15 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — Slanthour",
+  title: "Pricing · Slanthour",
   description:
-    "Free to start. Pro from $7/month for more pages, high-fidelity images and analytics. Keepsake pages: one payment, ten years guaranteed.",
+    "Free to start. Hobby from $36 a year, Pro from $7 a month, Studio for client work. Keepsake pages: one payment, ten years in writing.",
 };
 
 // Billing is not open yet (see MONETIZATION_PLAN.md §2) — the tiers are
 // announced honestly as "coming soon" and everything remains free until
-// checkout exists. Keep this page and lib/entitlements.ts in agreement.
+// checkout exists. Features that don't exist yet are marked "Coming".
+// Keep this page and lib/entitlements.ts in agreement.
 
 const TIERS = [
   {
@@ -17,10 +18,20 @@ const TIERS = [
     price: "$0",
     period: "forever",
     lines: [
-      "5 pages, 60 photographs each",
+      "3 pages, 40 photographs each",
       "Every theme, every setting",
       "Public, unlisted and password-protected publishing",
       "A quiet “Made with Slanthour” line on published pages",
+    ],
+  },
+  {
+    name: "Hobby",
+    price: "$36",
+    period: "per year · works out to $3 a month",
+    lines: [
+      "10 pages, 100 photographs each",
+      "No Slanthour line on your pages",
+      "For photographers who shoot for the love of it",
     ],
   },
   {
@@ -29,9 +40,9 @@ const TIERS = [
     period: "per month · $60 a year",
     lines: [
       "25 pages, 200 photographs each",
-      "No Slanthour line on your pages",
       "High-fidelity images (2560px) for large screens",
-      "Page views, counted privately — no cookies, no trackers",
+      "Page views, counted privately, without cookies or trackers",
+      "Coming: proofing galleries, password-protected pages where clients pick their favourites",
     ],
   },
   {
@@ -41,7 +52,8 @@ const TIERS = [
     lines: [
       "100 pages, 500 photographs each",
       "Everything in Pro",
-      "For working photographers delivering to clients",
+      "For studios presenting and delivering to clients",
+      "Coming: unlimited proofing galleries and high-fidelity client downloads",
     ],
   },
 ];
@@ -67,7 +79,7 @@ export default function PricingPage() {
           Simple plans. One honest promise.
         </h1>
         <p className="font-copy text-[15px] text-muted leading-loose mb-12 max-w-xl">
-          Billing hasn&apos;t opened yet — everything below is free while we finish it. When it
+          Billing hasn&apos;t opened yet, so everything below is free while we finish it. When it
           opens, nothing you&apos;ve already published comes down, and the editor is never locked
           behind a plan.
         </p>
@@ -90,6 +102,10 @@ export default function PricingPage() {
           ))}
         </div>
 
+        <p className="mt-5 text-[10px] uppercase tracking-wide text-muted/70">
+          Coming to every plan, free included: optional watermarking on your photographs
+        </p>
+
         {/* ── Keepsake page ── */}
         <section className="mt-14 border border-rule p-8">
           <div className="flex flex-wrap items-baseline justify-between gap-4 mb-5">
@@ -99,10 +115,12 @@ export default function PricingPage() {
             </p>
           </div>
           <p className="font-copy text-[15px] text-muted leading-loose mb-4">
-            For the pages that shouldn&apos;t depend on a subscription — a wedding, a tribute, a
-            life. One payment keeps a single page published for at least ten years, with no
-            Slanthour line and a downloadable archive copy that works on any web host, without
-            us. If Slanthour ever winds down, you get a year&apos;s notice and your archive.
+            Some pages shouldn&apos;t depend on a subscription: a wedding, a tribute, a life. One
+            payment keeps a single page published for as long as Slanthour exists, and at least
+            ten years of that is written into the terms. We&apos;re a small studio, so we
+            won&apos;t pretend forever is ours to promise. What we can promise: ten years
+            minimum, a year&apos;s notice if we ever had to close, and a downloadable copy of
+            your page that works on any web host, without us.
           </p>
           <p className="text-[10px] uppercase tracking-wide text-muted/70">
             Coming with billing · the ten-year term is written into the{" "}

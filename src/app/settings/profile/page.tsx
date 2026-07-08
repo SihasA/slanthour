@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfileSettingsForm } from "@/components/settings/ProfileSettingsForm";
 import type { Profile } from "@/types";
 
-export const metadata: Metadata = { title: "Profile settings — Slanthour" };
+export const metadata: Metadata = { title: "Profile settings · Slanthour" };
 
 export default async function ProfileSettingsPage() {
   const supabase = await createClient();

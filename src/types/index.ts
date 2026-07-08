@@ -2,7 +2,7 @@
 
 import type { PageDocument, PublishedSnapshot } from "@/lib/page-document";
 
-export type Tier = "free" | "pro" | "studio";
+export type Tier = "free" | "hobby" | "pro" | "studio";
 export type ThemeId =
   | "monograph"
   | "roll36"

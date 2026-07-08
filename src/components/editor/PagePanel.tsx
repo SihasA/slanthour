@@ -12,6 +12,7 @@ import {
   updatePageSettings,
 } from "@/lib/actions/pages";
 import { validateSlug, validatePagePassword } from "@/lib/validation";
+import type { PageDisplaySettings } from "@/lib/page-document";
 import type { Visibility } from "@/types";
 
 const fieldLabel = "text-[9px] uppercase tracking-label text-accent block mb-1.5";
@@ -33,6 +34,8 @@ export function PagePanel({
   username,
   title,
   onTitleChange,
+  display,
+  onDisplayChange,
   onUnpublish,
   onDeleteNavigate,
 }: {
@@ -44,6 +47,8 @@ export function PagePanel({
   username: string;
   title: string;
   onTitleChange: (title: string) => void;
+  display: PageDisplaySettings;
+  onDisplayChange: (patch: Partial<PageDisplaySettings>) => void;
   onUnpublish: () => void;
   onDeleteNavigate: () => void;
 }) {
@@ -204,12 +209,61 @@ export function PagePanel({
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={passwordSet ? "Password is set — type to replace" : "Choose a password"}
+            placeholder={passwordSet ? "Password is set. Type to replace" : "Choose a password"}
             autoComplete="new-password"
             className={textInput}
           />
         </div>
       )}
+
+      <div className="border-t border-rule pt-5">
+        <span className={fieldLabel}>Photos</span>
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={display.protectPhotos}
+            onChange={(e) => onDisplayChange({ protectPhotos: e.target.checked })}
+            className="mt-0.5 accent-current"
+          />
+          <span>
+            <span className="block text-[12px] text-foreground">Deter casual copying</span>
+            <span className="block text-[11px] text-muted font-copy">
+              Blocks right-click and drag on photos. It stops casual grabs, not screenshots;
+              watermarks protect better.
+            </span>
+          </span>
+        </label>
+
+        <div className="mt-4" role="radiogroup" aria-label="Photo resolution served">
+          <span className="block text-[11px] text-muted font-copy mb-1.5">Resolution served to visitors</span>
+          <div className="space-y-1.5">
+            {(
+              [
+                { value: "full", label: "Full quality", hint: "Up to the largest size your plan generates." },
+                { value: "md", label: "Capped at 1000px", hint: "Visitors never receive larger files. Your library keeps full quality." },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                role="radio"
+                aria-checked={display.maxPhotoRes === option.value}
+                onClick={() => onDisplayChange({ maxPhotoRes: option.value })}
+                className={`w-full text-left border p-3 transition-colors ${
+                  display.maxPhotoRes === option.value ? "border-accent" : "border-rule hover:border-muted"
+                }`}
+              >
+                <span className={`block text-[12px] ${display.maxPhotoRes === option.value ? "text-accent" : "text-foreground"}`}>
+                  {option.label}
+                </span>
+                <span className="block text-[11px] text-muted font-copy">{option.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="mt-2 text-[11px] text-muted/80 font-copy">
+          Saved with the page{isPublished ? "; republish to apply to the live page" : ""}.
+        </p>
+      </div>
 
       {status && (
         <p

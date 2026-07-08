@@ -50,7 +50,7 @@ export function MobileCta() {
           tabIndex={visible ? 0 : -1}
           className="text-[10px] uppercase tracking-wide text-accent hover:text-foreground transition-colors"
         >
-          Create a page — free <span className="text-sm">&rarr;</span>
+          Create a page · free <span className="text-sm">&rarr;</span>
         </Link>
         <button
           type="button"

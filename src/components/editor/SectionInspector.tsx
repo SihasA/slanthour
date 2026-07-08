@@ -70,11 +70,14 @@ function Select({
 
 export function SectionInspector({
   section,
+  allSections = [],
   theme,
   dispatch,
   hiFiUploads = false,
 }: {
   section: Section | null;
+  /** Full section list, for cross-section photo moves. */
+  allSections?: Section[];
   theme: string;
   dispatch: React.Dispatch<EditorAction>;
   hiFiUploads?: boolean;
@@ -85,7 +88,7 @@ export function SectionInspector({
   if (!section) {
     return (
       <p className="text-[12px] text-muted font-copy leading-relaxed">
-        Nothing selected. A page is a stack of sections — photos, headings, text — added from
+        Nothing selected. A page is a stack of sections (photos, headings, text) added from
         the section list. Select one there to edit it.
       </p>
     );
@@ -342,7 +345,7 @@ export function SectionInspector({
                     // Refuse silently-destructive conversions; the note guides the user.
                     setConvertError({
                       id: section.id,
-                      message: `${SECTION_LABELS[t]} holds ${capacity} image${capacity === 1 ? "" : "s"} — remove ${count - capacity} first.`,
+                      message: `${SECTION_LABELS[t]} holds ${capacity} image${capacity === 1 ? "" : "s"}. Remove ${count - capacity} first.`,
                     });
                     return;
                   }
@@ -375,7 +378,7 @@ export function SectionInspector({
           <label className={fieldLabel}>
             {sectionImageCapacity(section.type) === 1 ? "Image" : "Images"}
           </label>
-          <ImageManager section={section} dispatch={dispatch} hiFiUploads={hiFiUploads} />
+          <ImageManager section={section} allSections={allSections} dispatch={dispatch} hiFiUploads={hiFiUploads} />
         </div>
       )}
     </div>

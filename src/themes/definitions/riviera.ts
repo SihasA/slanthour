@@ -16,7 +16,7 @@ export const riviera: ThemeDefinition = {
   id: "riviera",
   name: "Riviera",
   description:
-    "Sun-lit postcard — shell-white paper, azure ink, postcard mats and a horizontal photo rail.",
+    "Sun-lit postcard: shell-white paper, azure ink, postcard mats and a horizontal photo rail.",
   purpose: "Travel diaries, summer series, holidays, city walks and anything shot in the sun.",
   featuredSections: ["contact-sheet", "sequence", "hero", "grid", "quote"],
   settingsSchema: [

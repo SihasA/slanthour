@@ -127,9 +127,44 @@ export type Section =
   | QuoteSection
   | SpacerSection;
 
+/**
+ * Page-level display settings. Live inside the document so they freeze into
+ * the published snapshot like everything else; absent means all defaults
+ * (older documents parse unchanged). Available on every tier by design.
+ */
+export interface PageDisplaySettings {
+  /** Block right-click and drag on photos. Deters casual copying only. */
+  protectPhotos: boolean;
+  /** Largest variant served to visitors: "md" caps files at 1000px. */
+  maxPhotoRes: "full" | "md";
+}
+
+export const DEFAULT_DISPLAY_SETTINGS: PageDisplaySettings = {
+  protectPhotos: false,
+  maxPhotoRes: "full",
+};
+
 export interface PageDocument {
   version: number;
   sections: Section[];
+  settings?: PageDisplaySettings;
+  /**
+   * The page tray: photos uploaded to the page but not yet placed in a
+   * section. Absent when empty (older documents parse unchanged). Tray
+   * photos count toward the page image limit and are stripped from the
+   * published snapshot at publish time.
+   */
+  tray?: PageImage[];
+}
+
+/** Read a document's tray with the default applied. */
+export function trayImages(doc: PageDocument): PageImage[] {
+  return doc.tray ?? [];
+}
+
+/** Read a document's display settings with defaults applied. */
+export function displaySettings(doc: PageDocument): PageDisplaySettings {
+  return doc.settings ?? DEFAULT_DISPLAY_SETTINGS;
 }
 
 /** Frozen snapshot written on publish; the only thing public routes read. */
@@ -349,6 +384,17 @@ export function sanitizeSection(raw: unknown): Section | null {
   }
 }
 
+/** Sanitize display settings; returns undefined when everything is default. */
+export function sanitizeDisplaySettings(v: unknown): PageDisplaySettings | undefined {
+  if (!isRecord(v)) return undefined;
+  const settings: PageDisplaySettings = {
+    protectPhotos: v.protectPhotos === true,
+    maxPhotoRes: oneOf(v.maxPhotoRes, ["full", "md"] as const, "full"),
+  };
+  const isDefault = !settings.protectPhotos && settings.maxPhotoRes === "full";
+  return isDefault ? undefined : settings;
+}
+
 /**
  * Parse + migrate an untrusted document (from the DB or a save request) into
  * the current version. Unknown sections are dropped, malformed fields
@@ -368,16 +414,24 @@ export function parseDocument(raw: unknown): PageDocument {
     seen.add(section.id);
     sections.push(section);
   }
-  return { version: DOCUMENT_VERSION, sections };
+  const settings = sanitizeDisplaySettings(raw.settings);
+  const tray = sanitizeImages(raw.tray, 500);
+  const doc: PageDocument = { version: DOCUMENT_VERSION, sections };
+  if (settings) doc.settings = settings;
+  if (tray.length > 0) doc.tray = tray;
+  return doc;
 }
 
-/** All media_assets ids referenced by a document. */
+/** All media_assets ids referenced by a document (sections + tray). */
 export function collectAssetIds(doc: PageDocument): Set<string> {
   const ids = new Set<string>();
   for (const section of doc.sections) {
     for (const img of sectionImages(section)) {
       if (img.assetId) ids.add(img.assetId);
     }
+  }
+  for (const img of trayImages(doc)) {
+    if (img.assetId) ids.add(img.assetId);
   }
   return ids;
 }
@@ -391,7 +445,8 @@ export function firstImage(doc: PageDocument): PageImage | null {
   return null;
 }
 
-/** Count of images across the document (entitlement checks). */
+/** Count of images across the document, tray included, so the tray can
+ * never become storage beyond the page's image limit (entitlement checks). */
 export function countImages(doc: PageDocument): number {
-  return doc.sections.reduce((n, s) => n + sectionImages(s).length, 0);
+  return doc.sections.reduce((n, s) => n + sectionImages(s).length, 0) + trayImages(doc).length;
 }

@@ -83,7 +83,11 @@ A `PageDocument` is a versioned, ordered list of **sections**. Eleven section ty
 `path`, dimensions, `alt`, `caption`, optional `focal` point, `blur`).
 
 Every section and image carries a **stable id** so reorders, undo/redo, and republish never
-disturb identity. The module also exports pure helpers (`collectAssetIds`, `firstImage`,
+disturb identity. The document also carries optional page-level **display settings**
+(`protectPhotos` blocks right-click/drag on photos; `maxPhotoRes: "md"` caps the served
+variant at 1000px), available on every tier, sanitised like everything else and frozen
+into the published snapshot; SmartImage and the Lightbox read them through a context
+provided by PageRenderer. The module also exports pure helpers (`collectAssetIds`, `firstImage`,
 `countImages`, `sectionImages`, capacity rules) and, crucially, **sanitisers** that parse
 untrusted jsonb without throwing — the render path can never crash on a malformed document.
 
@@ -140,7 +144,11 @@ toggles) and a `resolveTokens()` that maps settings → `--sh-*` CSS variables.
 
 The registry (`src/themes/registry.ts`) is the single source of truth: `getTheme`,
 `isThemeId`, `defaultThemeSettings`, and `sanitizeThemeSettings` (safe across theme switches
-— unknown keys fall back to defaults). Renderers share primitives: `SmartImage`, `Lightbox`,
+— unknown keys fall back to defaults). It is also the *only* place theme validity is
+enforced: the database deliberately has no theme constraint (a hardcoded `pages.theme`
+CHECK silently broke draft saves for themes 6–8 and was dropped in migration
+`20260708100000`). Adding a theme therefore needs no migration, but theme QA must include
+switching a real page to the new theme and confirming the save lands on the hosted DB. Renderers share primitives: `SmartImage`, `Lightbox`,
 `Container`, `Reveal` (scroll reveal), `SpacerBlock`. `PageRenderer.tsx` is the single entry
 point used by both the editor preview and the published route.
 
@@ -208,7 +216,18 @@ success it writes `{userId}/m/{assetId}/{lg,md,sm}.jpg` to storage and records a
 `media_assets` row; any failure rolls back. The endpoint is rate-limited.
 
 `DELETE /api/media/:id` refuses if any **published** snapshot still references the asset, so a
-delete can never break a live page. `src/lib/media.ts` resolves URLs and builds `srcset`;
+delete can never break a live page. `GET /api/media` returns the caller's library
+(metadata only, cursor-paginated 60 at a time) for the reuse picker; the same asset can be
+placed on many pages while stored once, since each placement is a fresh `PageImage` with its
+own caption/alt/focal.
+
+**Photo pool.** A document carries an optional `tray: PageImage[]` of photos uploaded to the
+page but not yet placed. The tray counts toward the page image limit (`countImages`), is
+stripped from the published snapshot in `publishPage` (unplaced photos never ship or cost
+egress), and drives the editor's drag-to-place flow. `ImageDrag.tsx` is a pointer-event drag
+layer (not dnd-kit, which already owns section-row sorting) moving photos between tray and
+sections; touch users get "Send to" / "Place" menus instead. `fillFromTray` is an explicit
+one-shot that pours the tray into sections in document order, never a live binding. `src/lib/media.ts` resolves URLs and builds `srcset`;
 `SmartImage` reserves aspect ratio (no layout shift), shows the blur placeholder, honours the
 focal point via `object-position`, lazy-loads below the fold, and opens the lightbox.
 
@@ -223,8 +242,8 @@ focal point via `object-position`, lazy-loads below the fold, and opens the ligh
 
 ## 10. Entitlements & monetization groundwork
 
-`src/lib/entitlements.ts` maps `tier` → capability (free 5 pages / 60 images per page; pro
-25 / 200; studio 100 / 500) plus the paid-feature flags: `removeBadge`, `hiFiUploads`,
+`src/lib/entitlements.ts` maps `tier` → capability (free 3 pages / 40 images per page;
+hobby 10 / 100; pro 25 / 200; studio 100 / 500) plus the paid-feature flags: `removeBadge`, `hiFiUploads`,
 `analytics`. `resolveTier` handles expiry (`profiles.tier_expires_at`): a lapsed paid tier
 reads as free with no writes needed. Enforced in `createPage`/`duplicatePage`/`savePageDraft`
 and in the media upload route.

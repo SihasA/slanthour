@@ -11,7 +11,7 @@ import { SHOWCASE_DOCUMENT, SHOWCASE_TITLE } from "@/lib/demo/showcase";
 import type { ThemeId } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Live demo — Slanthour",
+  title: "Live demo · Slanthour",
   description: "A real Slanthour page, rendered live. Switch themes and see the same photographs redesigned.",
   robots: { index: false, follow: false },
 };

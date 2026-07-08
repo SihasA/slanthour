@@ -3,6 +3,7 @@ import {
   collectAssetIds,
   countImages,
   createEmptyDocument,
+  displaySettings,
   createSection,
   firstImage,
   parseDocument,
@@ -179,5 +180,71 @@ describe("document queries", () => {
 
   it("countImages counts across all sections", () => {
     expect(countImages({ version: 1, sections: build() })).toBe(4);
+  });
+});
+
+describe("display settings", () => {
+  it("parses valid settings and applies defaults to bad fields", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      settings: { protectPhotos: true, maxPhotoRes: "huge" },
+    });
+    expect(doc.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full" });
+  });
+
+  it("keeps a non-default serving cap", () => {
+    const doc = parseDocument({ version: 1, sections: [], settings: { maxPhotoRes: "md" } });
+    expect(doc.settings).toEqual({ protectPhotos: false, maxPhotoRes: "md" });
+  });
+
+  it("collapses all-default settings to absent", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      settings: { protectPhotos: false, maxPhotoRes: "full" },
+    });
+    expect(doc.settings).toBeUndefined();
+    expect(parseDocument({ version: 1, sections: [], settings: "garbage" }).settings).toBeUndefined();
+  });
+
+  it("reads defaults through displaySettings()", () => {
+    expect(displaySettings(createEmptyDocument())).toEqual({
+      protectPhotos: false,
+      maxPhotoRes: "full",
+    });
+  });
+});
+
+describe("tray", () => {
+  const rawImg = (n: number) => ({ id: `t${n}`, path: `u/m/a${n}/lg.jpg`, alt: "", caption: "" });
+
+  it("parses tray images and drops malformed entries", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      tray: [rawImg(1), { nope: true }, rawImg(2)],
+    });
+    expect(doc.tray?.map((i) => i.id)).toEqual(["t1", "t2"]);
+  });
+
+  it("omits the tray key when empty or absent", () => {
+    expect(parseDocument({ version: 1, sections: [] }).tray).toBeUndefined();
+    expect(parseDocument({ version: 1, sections: [], tray: [] }).tray).toBeUndefined();
+    expect(parseDocument({ version: 1, sections: [], tray: "junk" }).tray).toBeUndefined();
+  });
+
+  it("counts tray images toward the page image limit", () => {
+    const doc = parseDocument({ version: 1, sections: [], tray: [rawImg(1), rawImg(2)] });
+    expect(countImages(doc)).toBe(2);
+  });
+
+  it("collects asset ids from the tray", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      tray: [{ ...rawImg(1), assetId: "asset-9" }],
+    });
+    expect(collectAssetIds(doc).has("asset-9")).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ export const verdigris: ThemeDefinition = {
   id: "verdigris",
   name: "Verdigris",
   description:
-    "Botanical dusk — deep green, copper and patina, arched plate frames, engraved captions.",
+    "Botanical dusk: deep green, copper and patina, arched plate frames, engraved captions.",
   purpose: "Gardens and nature, quiet portraits, weddings at dusk, studies of place and season.",
   featuredSections: ["hero", "grid", "image", "quote", "split"],
   settingsSchema: [

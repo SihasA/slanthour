@@ -38,7 +38,7 @@ export default function NewPagePage() {
           Name your page.
         </h1>
         <p className="font-copy text-sm text-muted mb-8">
-          A photo series, a trip, a person, a project — you can rename it any time.
+          A photo series, a trip, a person, a project. You can rename it any time.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">

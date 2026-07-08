@@ -785,7 +785,7 @@ function ContextModal({
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title — e.g. Brand Voice"
+          placeholder="Title, e.g. Brand Voice"
           autoFocus
           className="bg-transparent border border-rule px-4 py-3 font-heading italic focus:border-accent"
         />
