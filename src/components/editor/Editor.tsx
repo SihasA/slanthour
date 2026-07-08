@@ -128,7 +128,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
     if (saveStateRef.current !== "saved") {
       const saved = await saveNow();
       if (!saved) {
-        setPublishState({ busy: false, message: "Save failed — fix the save error before publishing.", url: null });
+        setPublishState({ busy: false, message: "Save failed. Fix the save error before publishing.", url: null });
         return;
       }
     }
@@ -147,7 +147,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
     const result = await unpublishPage(page.id);
     if (result.ok) {
       setIsPublished(false);
-      setPublishState({ busy: false, message: "Unpublished — the page is no longer public.", url: null });
+      setPublishState({ busy: false, message: "Unpublished. The page is no longer public.", url: null });
     } else {
       setPublishState({ busy: false, message: result.error, url: null });
     }
@@ -314,7 +314,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
       )}
       {saveState === "conflict" && (
         <div className="shrink-0 px-5 py-2 text-[12px] border-b border-rule bg-surface text-red-400 flex items-center gap-3" role="alert">
-          This page was changed in another tab or session. Reload to pick up the latest version — unsaved changes here will be lost.
+          This page was changed in another tab or session. Reload to pick up the latest version; unsaved changes here will be lost.
           <button onClick={() => window.location.reload()} className="text-foreground underline underline-offset-2">
             Reload
           </button>
@@ -351,8 +351,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
             {state.content.document.sections.length === 0 && (
               <div className="absolute inset-x-0 top-1/3 text-center px-6 pointer-events-none">
                 <p className="text-muted text-sm font-copy">
-                  This page is empty. Add a section — a hero, a grid of photos, some text — to
-                  begin.
+                  This page is empty. Add a section to begin: a hero, a grid of photos, some text.
                 </p>
               </div>
             )}

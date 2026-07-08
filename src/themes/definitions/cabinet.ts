@@ -7,7 +7,7 @@ const BODY = "var(--font-inter), sans-serif";
 export const cabinet: ThemeDefinition = {
   id: "cabinet",
   name: "Cabinet",
-  description: "Museum catalogue — archival labels, index numbering, structured groups, quiet typography.",
+  description: "Museum catalogue: archival labels, index numbering, structured groups, quiet typography.",
   purpose: "Family archives, historical collections, artist catalogues, object studies and long-term projects.",
   featuredSections: ["grid", "heading", "image", "text", "row"],
   settingsSchema: [

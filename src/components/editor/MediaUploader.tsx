@@ -76,7 +76,7 @@ export function MediaUploader({
       list = list.slice(0, Math.max(0, capacityLeft));
       setNotice(
         capacityLeft <= 0
-          ? "This section is full — remove an image first."
+          ? "This section is full. Remove an image first."
           : `Only ${capacityLeft} more image${capacityLeft === 1 ? "" : "s"} fit in this section.`
       );
     }

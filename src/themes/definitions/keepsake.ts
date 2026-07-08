@@ -28,7 +28,7 @@ const PALETTE_ACCENT_DARK: Record<string, string> = {
 export const keepsake: ThemeDefinition = {
   id: "keepsake",
   name: "Keepsake",
-  description: "Warm scrapbook composition — layered paper, tape and pin accents, handwritten annotations.",
+  description: "Warm scrapbook composition: layered paper, tape and pin accents, handwritten annotations.",
   purpose: "Friends, family memories, travel, birthdays, weddings and personal diaries.",
   featuredSections: ["hero", "split", "row", "image", "quote", "text"],
   settingsSchema: [

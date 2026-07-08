@@ -96,9 +96,9 @@ const spectral = Spectral({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://slanthour.com"),
-  title: "Slant Hour — A home for your best work",
+  title: "Slant Hour · A home for your best work",
   description:
-    "A curated portfolio platform for photographers and visual creatives. No algorithm, no noise — just your best photographs, presented beautifully.",
+    "A curated portfolio platform for photographers and visual creatives. No algorithm, no noise. Just your best photographs, presented beautifully.",
   icons: {
     icon: "/favicon.svg",
   },

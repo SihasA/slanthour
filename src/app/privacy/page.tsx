@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Privacy — Slanthour" };
+export const metadata: Metadata = { title: "Privacy · Slanthour" };
 
 const sectionTitle = "font-heading text-xl font-light italic text-foreground mt-10 mb-3";
 const body = "font-copy text-[15px] text-muted leading-loose";
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         </p>
 
         <p className={body}>
-          Slanthour exists to publish the pages you choose to publish — nothing more. This policy
+          Slanthour exists to publish the pages you choose to publish, nothing more. This policy
           describes what we store and why, in plain language.
         </p>
 
@@ -35,11 +35,11 @@ export default function PrivacyPage() {
 
         <h2 className={sectionTitle}>Your photographs</h2>
         <p className={body}>
-          Photographs are re-encoded on upload, which removes embedded camera metadata — including
-          GPS location — before anything reaches our storage. We keep the display versions we
+          Photographs are re-encoded on upload, which removes embedded camera metadata, including
+          GPS location, before anything reaches our storage. We keep the display versions we
           generate, not your original camera files. Photographs on draft or restricted pages are
           not listed publicly, but are served from storage URLs that are unguessable rather than
-          access-controlled — treat truly sensitive images accordingly.
+          access-controlled, so treat truly sensitive images accordingly.
         </p>
 
         <h2 className={sectionTitle}>Page passwords</h2>

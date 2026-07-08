@@ -170,7 +170,7 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ page
   const { data: profile } = await supabase
     .from("profiles").select("tier, tier_expires_at").eq("id", user.id).single();
   if ((await countablePages(supabase, user.id)) >= getProfileEntitlements(profile).maxPages)
-    return err("Page limit reached — delete a page before duplicating.");
+    return err("Page limit reached. Delete a page before duplicating.");
 
   // Fresh section/image ids; assetIds intentionally shared (same underlying files).
   const doc = parseDocument(page.draft);

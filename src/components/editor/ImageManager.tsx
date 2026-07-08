@@ -68,7 +68,7 @@ function ImageRow({
             }
             placeholder="Alt text (describe the photo)"
             aria-label="Alt text"
-            title="Not shown on the page — read by screen readers and search engines"
+            title="Not shown on the page, used by screen readers and search engines"
             className="w-full bg-transparent border-b border-rule focus:border-accent text-[12px] py-1 text-foreground placeholder:text-muted/40 focus:outline-none font-copy"
           />
         </div>
@@ -109,7 +109,7 @@ function ImageRow({
       {showFocal && (
         <div className="mt-2">
           <p className="text-[10px] text-muted mb-1.5 font-copy">
-            Crop focus — which part stays visible when the photo is cropped.
+            Crop focus: which part stays visible when the photo is cropped.
           </p>
           <div
             className="relative w-24 h-24 bg-center bg-cover"

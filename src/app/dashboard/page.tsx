@@ -47,7 +47,7 @@ export default async function DashboardPage() {
       <div className="px-6 py-16 max-w-3xl">
         <h1 className="font-heading text-2xl italic font-light mb-3">Your pages</h1>
         <p className="text-sm text-red-400 font-copy">
-          Could not load your pages — refresh to try again.
+          Could not load your pages. Refresh to try again.
         </p>
       </div>
     );
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
         <div className="border border-dashed border-rule py-20 text-center">
           <p className="font-heading italic text-xl text-foreground mb-2">No pages yet.</p>
           <p className="font-copy text-sm text-muted mb-8 max-w-sm mx-auto">
-            Turn a collection of photographs into a beautifully designed page — a series, a trip,
+            Turn a collection of photographs into a beautifully designed page: a series, a trip,
             a person, a project.
           </p>
           <Link

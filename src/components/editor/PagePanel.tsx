@@ -204,7 +204,7 @@ export function PagePanel({
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={passwordSet ? "Password is set — type to replace" : "Choose a password"}
+            placeholder={passwordSet ? "Password is set. Type to replace" : "Choose a password"}
             autoComplete="new-password"
             className={textInput}
           />

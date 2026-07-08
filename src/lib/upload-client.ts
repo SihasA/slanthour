@@ -36,7 +36,7 @@ export async function uploadPhoto(
   try {
     prepared = await prepareUpload(file, opts);
   } catch {
-    return { ok: false, error: `Could not read “${file.name}” — the file may be corrupted.` };
+    return { ok: false, error: `Could not read “${file.name}”. The file may be corrupted.` };
   }
 
   const form = new FormData();
@@ -64,7 +64,7 @@ export async function uploadPhoto(
         resolve({ ok: false, error: "Upload failed." });
       }
     };
-    xhr.onerror = () => resolve({ ok: false, error: "Network error — check your connection and retry." });
+    xhr.onerror = () => resolve({ ok: false, error: "Network error. Check your connection and retry." });
     xhr.onabort = () => resolve({ ok: false, error: "Upload cancelled." });
     xhr.send(form);
   });
@@ -77,6 +77,6 @@ export async function deleteMediaAsset(assetId: string): Promise<{ ok: boolean; 
     if (res.ok) return { ok: true };
     return { ok: false, error: body.error ?? "Could not delete the image." };
   } catch {
-    return { ok: false, error: "Network error — try again." };
+    return { ok: false, error: "Network error. Try again." };
   }
 }

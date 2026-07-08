@@ -223,8 +223,8 @@ focal point via `object-position`, lazy-loads below the fold, and opens the ligh
 
 ## 10. Entitlements & monetization groundwork
 
-`src/lib/entitlements.ts` maps `tier` → capability (free 5 pages / 60 images per page; pro
-25 / 200; studio 100 / 500) plus the paid-feature flags: `removeBadge`, `hiFiUploads`,
+`src/lib/entitlements.ts` maps `tier` → capability (free 3 pages / 40 images per page;
+hobby 10 / 100; pro 25 / 200; studio 100 / 500) plus the paid-feature flags: `removeBadge`, `hiFiUploads`,
 `analytics`. `resolveTier` handles expiry (`profiles.tier_expires_at`): a lapsed paid tier
 reads as free with no writes needed. Enforced in `createPage`/`duplicatePage`/`savePageDraft`
 and in the media upload route.

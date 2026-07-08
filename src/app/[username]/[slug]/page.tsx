@@ -71,15 +71,15 @@ async function showBadge(
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
   const { username, slug } = await params;
   const loaded = await loadPage(username, slug);
-  if (!loaded) return { title: "Not found — Slanthour" };
+  if (!loaded) return { title: "Not found · Slanthour" };
   const { page, profile } = loaded;
 
   // Protected pages must not expose their content through metadata.
   if (page.visibility === "password") {
-    return { title: "Protected page — Slanthour", robots: { index: false, follow: false } };
+    return { title: "Protected page · Slanthour", robots: { index: false, follow: false } };
   }
 
-  const title = `${page.published.title} — ${profile.display_name}`;
+  const title = `${page.published.title} · ${profile.display_name}`;
   return {
     title,
     description: `A page by ${profile.display_name} on Slanthour.`,

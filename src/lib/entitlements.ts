@@ -22,10 +22,20 @@ export interface Entitlements {
 
 const TIER_ENTITLEMENTS: Record<Tier, Entitlements> = {
   free: {
-    maxPages: 5,
-    maxImagesPerPage: 60,
+    maxPages: 3,
+    maxImagesPerPage: 40,
     canPublish: true,
     removeBadge: false,
+    hiFiUploads: false,
+    analytics: false,
+  },
+  // Entry paid tier for hobbyist photographers, sold annual-first: the
+  // purchase is badge removal and room to grow, not pro tooling.
+  hobby: {
+    maxPages: 10,
+    maxImagesPerPage: 100,
+    canPublish: true,
+    removeBadge: true,
     hiFiUploads: false,
     analytics: false,
   },
