@@ -6,10 +6,13 @@
 
 import {
   createSection,
+  displaySettings,
   newSectionId,
+  sanitizeDisplaySettings,
   sectionImageCapacity,
   sectionImages,
   withSectionImages,
+  type PageDisplaySettings,
   type PageDocument,
   type PageImage,
   type Section,
@@ -51,6 +54,7 @@ export type EditorAction =
   | { type: "moveImage"; sectionId: string; imageId: string; direction: -1 | 1 }
   | { type: "updateImage"; sectionId: string; imageId: string; patch: Partial<PageImage>; coalesceKey?: string }
   | { type: "setTitle"; title: string; coalesceKey?: string }
+  | { type: "setDisplaySettings"; patch: Partial<PageDisplaySettings> }
   | { type: "setTheme"; theme: ThemeId }
   | { type: "updateThemeSettings"; key: string; value: string | boolean }
   | { type: "selectSection"; id: string | null }
@@ -214,6 +218,16 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case "setTitle":
       return commit(state, { ...content, title: action.title }, { coalesceKey: action.coalesceKey });
+
+    case "setDisplaySettings": {
+      // Normalize through the sanitizer so defaults collapse back to an
+      // absent settings key, keeping untouched documents byte-identical.
+      const settings = sanitizeDisplaySettings({ ...displaySettings(doc), ...action.patch });
+      const document: PageDocument = settings
+        ? { ...doc, settings }
+        : (({ settings: _dropped, ...rest }) => rest)(doc);
+      return commit(state, { ...content, document });
+    }
 
     case "setTheme": {
       if (action.theme === content.theme) return state;

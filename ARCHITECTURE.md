@@ -83,7 +83,11 @@ A `PageDocument` is a versioned, ordered list of **sections**. Eleven section ty
 `path`, dimensions, `alt`, `caption`, optional `focal` point, `blur`).
 
 Every section and image carries a **stable id** so reorders, undo/redo, and republish never
-disturb identity. The module also exports pure helpers (`collectAssetIds`, `firstImage`,
+disturb identity. The document also carries optional page-level **display settings**
+(`protectPhotos` blocks right-click/drag on photos; `maxPhotoRes: "md"` caps the served
+variant at 1000px), available on every tier, sanitised like everything else and frozen
+into the published snapshot; SmartImage and the Lightbox read them through a context
+provided by PageRenderer. The module also exports pure helpers (`collectAssetIds`, `firstImage`,
 `countImages`, `sectionImages`, capacity rules) and, crucially, **sanitisers** that parse
 untrusted jsonb without throwing — the render path can never crash on a malformed document.
 

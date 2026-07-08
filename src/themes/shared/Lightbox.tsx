@@ -15,7 +15,8 @@ import {
   useState,
 } from "react";
 import type { PageImage } from "@/lib/page-document";
-import { imageUrl } from "@/lib/media";
+import { clampVariant, imageUrl } from "@/lib/media";
+import { servingCap, usePageDisplay } from "./PageDisplay";
 
 interface LightboxContextValue {
   open: (image: PageImage, group: PageImage[]) => void;
@@ -38,6 +39,7 @@ export function LightboxProvider({
   children: React.ReactNode;
   enabled?: boolean;
 }) {
+  const display = usePageDisplay();
   const [group, setGroup] = useState<PageImage[]>([]);
   const [index, setIndex] = useState<number | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -134,10 +136,11 @@ export function LightboxProvider({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={current.id}
-              src={imageUrl(current, "xl")}
+              src={imageUrl(current, clampVariant("xl", servingCap(display)))}
               alt={current.alt || current.caption || ""}
               className="max-h-full max-w-full object-contain select-none"
               draggable={false}
+              onContextMenu={display.protectPhotos ? (e) => e.preventDefault() : undefined}
             />
             {group.length > 1 && (
               <button

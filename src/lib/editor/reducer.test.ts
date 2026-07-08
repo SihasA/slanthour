@@ -230,3 +230,27 @@ describe("theme switching", () => {
     expect(state.content.themeSettings.paper).toBe("light"); // invalid → default
   });
 });
+
+describe("display settings", () => {
+  it("sets, patches and collapses back to absent", () => {
+    let state = freshState();
+    state = editorReducer(state, { type: "setDisplaySettings", patch: { protectPhotos: true } });
+    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full" });
+
+    state = editorReducer(state, { type: "setDisplaySettings", patch: { maxPhotoRes: "md" } });
+    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "md" });
+
+    state = editorReducer(state, {
+      type: "setDisplaySettings",
+      patch: { protectPhotos: false, maxPhotoRes: "full" },
+    });
+    expect(state.content.document.settings).toBeUndefined();
+  });
+
+  it("participates in undo", () => {
+    let state = freshState();
+    state = editorReducer(state, { type: "setDisplaySettings", patch: { protectPhotos: true } });
+    state = editorReducer(state, { type: "undo" });
+    expect(state.content.document.settings).toBeUndefined();
+  });
+});
