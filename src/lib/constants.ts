@@ -56,6 +56,8 @@ export const RESERVED_SLUGS = [
   "edit",
   "delete",
   "media",
+  "proof",
+  "proofing",
   "assets",
   "static",
   "public",

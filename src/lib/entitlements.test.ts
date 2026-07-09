@@ -69,6 +69,18 @@ describe("entitlements", () => {
     expect(getEntitlements("studio").canPublish).toBe(true);
   });
 
+  it("gates proofing galleries to Pro and Studio", () => {
+    expect(getEntitlements("free").proofingGalleries).toBe(0);
+    expect(getEntitlements("hobby").proofingGalleries).toBe(0);
+    expect(getEntitlements("pro").proofingGalleries).toBe(3);
+    expect(getEntitlements("studio").proofingGalleries).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("drops proofing back to zero when a Pro plan lapses", () => {
+    const past = new Date(Date.now() - 1000).toISOString();
+    expect(getProfileEntitlements({ tier: "pro", tier_expires_at: past }).proofingGalleries).toBe(0);
+  });
+
   it("resolves profile fragments through tier expiry", () => {
     const past = new Date(Date.now() - 1000).toISOString();
     expect(getProfileEntitlements({ tier: "pro", tier_expires_at: past }).hiFiUploads).toBe(false);

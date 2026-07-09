@@ -129,19 +129,22 @@ Cut by the not-an-archive principle (8 Jul). The need it served is now met by
 hi-fi showcase pages plus Studio client downloads (§3.8). No storage metering
 anywhere in the product.
 
-### 3.7 Proofing galleries (Pro: 3 active, Studio: unlimited) — phase 3
-The client-selects-their-favourites workflow:
+### 3.7 Proofing galleries (Pro: 3 active, Studio: unlimited) — **shipped 9 Jul**
+The client-selects-their-favourites workflow, built as specified:
 
-- A proofing gallery is its own object, not a page: link + password access,
-  no client accounts.
-- Serves **sm/md variants only** (~100KB/photo). A full 800-photo shoot costs
-  roughly $0.002/month to store; economics hold at any realistic volume.
-- Clients tap to favourite; selections persist per gallery.
-- The photographer's deliverable is the select list (filenames, exportable,
-  pastes straight into Lightroom). Downloads and per-photo comments come
-  later.
-- Copy states the data practice: previews in the gallery, finals on the
-  showcase page.
+- A proofing gallery is its own object, not a page: `/proof/{slug}` with an
+  unguessable slug + optional password, no client accounts. Archiving closes
+  the link (and frees an active slot); deleting removes the photos.
+- Serves **sm/md variants only** (~100KB/photo), enforced by construction —
+  the proofing pipeline never generates lg/xl. Cap: 1,000 photos per gallery.
+- Clients tap to favourite; one shared selection set persists per gallery.
+  Owners see picks live on `/proofing/{id}` and can clear them for a second
+  review round.
+- The photographer's deliverable is the select list (original filenames,
+  copyable as lines or comma-separated, pastes straight into Lightroom).
+  Downloads and per-photo comments come later.
+- Copy states the data practice: previews in the gallery, finals from the
+  photographer. Architecture detail: ARCHITECTURE.md §10.
 
 ### 3.8 Hi-fi client downloads (Studio) — phase 5
 A showcase page's owner can enable client download of the xl variants (zip or
@@ -213,7 +216,9 @@ Shipped and provider-independent:
 - [ ] **Pick the provider**: verify Paddle and Lemon Squeezy onboarding +
       direct bank payout from Sri Lanka (Payoneer rail is gone); then build
       checkout + webhook (reduces to the effects lib).
-- [ ] Proofing galleries (§3.7) and watermarking (§3.9) — phase 3 build.
+- [x] Proofing galleries (§3.7) — built 9 Jul (dashboard + client gallery + select-list
+  export). Migration `20260709000000_proofing.sql` awaits review before touching prod.
+- [ ] Watermarking (§3.9) — still open; ships next.
 - [ ] Static archive export (§3.5) — ships with the Keepsake purchase flow.
 - [ ] Cloudflare free CDN in front of site + storage (pre-launch, see §5).
 - [ ] Local tax advice on foreign income (non-blocking).

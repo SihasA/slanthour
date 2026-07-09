@@ -18,6 +18,8 @@ export interface Entitlements {
   hiFiUploads: boolean;
   /** Page view counts are visible (they are recorded for everyone). */
   analytics: boolean;
+  /** Active proofing galleries allowed (archived ones never count). */
+  proofingGalleries: number;
 }
 
 const TIER_ENTITLEMENTS: Record<Tier, Entitlements> = {
@@ -28,6 +30,7 @@ const TIER_ENTITLEMENTS: Record<Tier, Entitlements> = {
     removeBadge: false,
     hiFiUploads: false,
     analytics: false,
+    proofingGalleries: 0,
   },
   // Entry paid tier for hobbyist photographers, sold annual-first: the
   // purchase is badge removal and room to grow, not pro tooling.
@@ -38,6 +41,7 @@ const TIER_ENTITLEMENTS: Record<Tier, Entitlements> = {
     removeBadge: true,
     hiFiUploads: false,
     analytics: false,
+    proofingGalleries: 0,
   },
   pro: {
     maxPages: 25,
@@ -46,6 +50,7 @@ const TIER_ENTITLEMENTS: Record<Tier, Entitlements> = {
     removeBadge: true,
     hiFiUploads: true,
     analytics: true,
+    proofingGalleries: 3,
   },
   studio: {
     maxPages: 100,
@@ -54,6 +59,7 @@ const TIER_ENTITLEMENTS: Record<Tier, Entitlements> = {
     removeBadge: true,
     hiFiUploads: true,
     analytics: true,
+    proofingGalleries: Number.POSITIVE_INFINITY,
   },
 };
 
