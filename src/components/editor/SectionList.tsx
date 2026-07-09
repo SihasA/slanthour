@@ -32,12 +32,16 @@ import {
   type Section,
 } from "@/lib/page-document";
 import { imageUrl } from "@/lib/media";
+import { PAGE_TEMPLATES, templateStructure } from "@/lib/page-templates";
 import { SECTION_GROUPS, SECTION_DESCRIPTIONS, SectionGlyph } from "./section-meta";
 import { getTheme } from "@/themes/registry";
 import type { EditorAction } from "@/lib/editor/reducer";
 import { useImageDrag } from "./ImageDrag";
 import { MediaUploader } from "./MediaUploader";
 import { LibraryPicker } from "./LibraryPicker";
+
+// Structure lines are static per template; derive once, not per render.
+const TEMPLATE_STRUCTURES = new Map(PAGE_TEMPLATES.map((t) => [t.id, templateStructure(t)]));
 
 function sectionFreeCapacity(section: Section): number {
   const capacity = sectionImageCapacity(section.type);
@@ -249,9 +253,38 @@ export function SectionList({
     <div className="flex flex-col min-h-0 h-full">
       <div className="flex-1 min-h-0 overflow-y-auto">
         {document.sections.length === 0 ? (
-          <p className="p-4 text-[12px] text-muted font-copy">
-            No sections yet. Add your first one below.
-          </p>
+          <div className="p-4">
+            <p className="text-[10px] uppercase tracking-wide text-muted mb-3">
+              Start from a template
+            </p>
+            <ul className="flex flex-col gap-2" aria-label="Page templates">
+              {PAGE_TEMPLATES.map((template) => (
+                <li key={template.id}>
+                  <button
+                    onClick={() => dispatch({ type: "applyTemplate", templateId: template.id })}
+                    className="w-full text-left border border-rule hover:border-accent transition-colors px-3 py-2.5"
+                  >
+                    <span className="block font-heading text-[14px] italic text-foreground">
+                      {template.name}
+                    </span>
+                    <span className="block mt-1 text-[11px] leading-snug text-muted font-copy">
+                      {template.description}
+                    </span>
+                    <span className="block mt-1.5 text-[10px] leading-snug text-muted/70 font-copy">
+                      {TEMPLATE_STRUCTURES.get(template.id)}
+                    </span>
+                    <span className="block mt-0.5 text-[10px] text-muted/70 font-copy">
+                      Pairs well with {template.pairsWith}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[11px] leading-snug text-muted font-copy">
+              A template only sets up sections; you can reorder, convert or delete them, and
+              undo puts things back. Or skip it and build your own below.
+            </p>
+          </div>
         ) : (
           <DndContext id={id} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext

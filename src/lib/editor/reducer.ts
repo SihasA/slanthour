@@ -19,6 +19,7 @@ import {
   type Section,
   type SectionType,
 } from "@/lib/page-document";
+import { getTemplate, type TemplateId } from "@/lib/page-templates";
 import type { ThemeSettings } from "@/themes/types";
 import { defaultThemeSettings, sanitizeThemeSettings } from "@/themes/registry";
 import type { ThemeId } from "@/types";
@@ -45,6 +46,7 @@ const HISTORY_LIMIT = 50;
 
 export type EditorAction =
   | { type: "addSection"; sectionType: SectionType; afterId?: string | null }
+  | { type: "applyTemplate"; templateId: TemplateId }
   | { type: "deleteSection"; id: string }
   | { type: "duplicateSection"; id: string }
   | { type: "moveSection"; id: string; toIndex: number }
@@ -143,6 +145,15 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       const sections = [...doc.sections];
       sections.splice(index === 0 ? doc.sections.length : index, 0, section);
       return commit(state, { ...content, document: { ...doc, sections } }, { select: section.id });
+    }
+
+    case "applyTemplate": {
+      // A template appends its whole skeleton as ONE history entry, so a
+      // single undo removes it again. Appending (not replacing) keeps the
+      // action safe even if sections already exist.
+      const added = getTemplate(action.templateId).build();
+      const sections = [...doc.sections, ...added];
+      return commit(state, { ...content, document: { ...doc, sections } }, { select: added[0]?.id ?? null });
     }
 
     case "deleteSection": {

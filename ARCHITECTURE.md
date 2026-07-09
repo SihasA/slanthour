@@ -130,6 +130,15 @@ the link, but not listed."
   conflict. A `beforeunload` guard protects unsaved edits.
 - **Live preview** uses the *same* `PageRenderer` as the published page, so what you design
   is exactly what publishes.
+- **Templates** (`src/lib/page-templates.ts`) — quick-start section skeletons, offered in two
+  places: the `/pages/new` picker (`createPage` takes an optional `templateId`, validated by
+  `isTemplateId`, unknown ids fall back to blank) and as cards in the empty-editor state
+  (`applyTemplate` reducer action appends the whole skeleton as **one undo step**). A template
+  is *not* a theme: it only creates sections, never touches theme or settings; cards show a
+  soft "pairs well with" hint. The structure line on each card is derived from `build()`
+  output so it cannot drift. Like theme ids, the template catalogue is **code-defined only**:
+  never mirror it into a DB constraint (see §6 on the retired `pages_theme_check`). Designed
+  to compose with the tray: template gives structure, "Fill sections in order" pours photos in.
 
 ---
 
