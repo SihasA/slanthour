@@ -2,6 +2,10 @@ import Link from "next/link";
 import { ThemeShowcase } from "@/components/landing/ThemeShowcase";
 import { MobileCta } from "@/components/landing/MobileCta";
 import { Reveal } from "@/components/landing/Reveal";
+import { HourHero } from "@/components/landing/HourHero";
+import { HourMeter } from "@/components/landing/HourMeter";
+import { HourOfThemes } from "@/components/landing/HourOfThemes";
+import { PrintsInLight } from "@/components/landing/PrintsInLight";
 import { THEME_IDS } from "@/themes/registry";
 
 const CYCLE_WORDS = ["weddings", "road trips", "portfolios", "tributes", "whole years"];
@@ -86,6 +90,9 @@ export default function LandingPage() {
 
       {/* Film grain over the whole page — printed, not rendered. */}
       <div aria-hidden className="grain fixed inset-0 z-[70] pointer-events-none opacity-[0.13] mix-blend-soft-light" />
+
+      {/* Scroll = the hour passing (17:00 → 19:00, desktop only) */}
+      <HourMeter />
 
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 bg-background/90 backdrop-blur-md border-b border-transparent hover:border-rule transition-colors duration-300">
@@ -198,75 +205,30 @@ export default function LandingPage() {
 
           {/* Mobile: one photograph above the fold */}
           <div className="lg:hidden mt-8 photo-in" style={{ "--rise-delay": "300ms" } as React.CSSProperties}>
-            <div className="aspect-[3/2] border border-rule overflow-hidden">
+            <div className="relative aspect-[3/2] border border-rule overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/demo/photo-2.jpg"
-                alt="A photograph from a live Slanthour demo page"
-                width={900}
-                height={600}
+                src="/landing/wedding.jpg"
+                alt="A couple backlit by low golden sun, the veil catching the light"
+                width={1600}
+                height={1066}
                 fetchPriority="high"
                 className="w-full h-full object-cover slow-drift"
               />
+              <span aria-hidden className="light-sweep" />
             </div>
             <p className="mt-2 text-[9px] uppercase tracking-wide text-muted/60 font-body">
-              № 01 · from the live demo
+              № 01 · 18:47 · the slanted hour
             </p>
           </div>
         </div>
 
-        {/* Desktop: offset two-photo composition on a slanted rule */}
-        <div className="hidden lg:block relative pb-16">
-          {/* The slant — a thin accent rule crossing behind the photographs */}
-          <span
-            aria-hidden
-            className="absolute left-[-12%] right-[-6%] top-[46%] h-px bg-accent/35 -rotate-[14deg]"
-          />
-          <div
-            className="relative w-[72%] ml-auto border border-rule bg-background p-1.5 photo-in"
-            style={{ "--rise-delay": "250ms" } as React.CSSProperties}
-          >
-            <div className="overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/demo/photo-6.jpg"
-                alt="A portrait photograph from a live Slanthour demo page"
-                width={600}
-                height={900}
-                fetchPriority="high"
-                className="w-full h-auto slow-drift"
-              />
-            </div>
-            <p className="absolute -right-1 top-3 rotate-90 origin-top-right text-[8px] uppercase tracking-[0.3em] text-muted/50 font-body whitespace-nowrap">
-              № 01 · Monograph
-            </p>
-          </div>
-          <div
-            className="absolute left-0 bottom-0 w-[58%] bg-background p-1.5 border border-rule photo-in"
-            style={{ "--rise-delay": "420ms" } as React.CSSProperties}
-          >
-            <div className="overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/demo/photo-4.jpg"
-                alt="A landscape photograph from a live Slanthour demo page"
-                width={900}
-                height={600}
-                className="w-full h-auto slow-drift [animation-delay:-8s]"
-              />
-            </div>
-            <p className="mt-1.5 px-0.5 text-[8px] uppercase tracking-[0.3em] text-muted/50 font-body">
-              № 02 · from the live demo
-            </p>
-          </div>
-          <a
-            href="#themes"
-            className="draw-link absolute -bottom-8 right-0 text-[9px] uppercase tracking-wide text-muted/60 hover:text-muted transition-colors"
-          >
-            Every theme reframes them &darr;
-          </a>
-        </div>
+        {/* Desktop: prints catching the hour's light */}
+        <HourHero className="hidden lg:block" />
       </section>
+
+      {/* ── The hour of themes: pinned scroll theatre ────────── */}
+      <HourOfThemes />
 
       {/* ── Theme showcase ──────────────────────────────────── */}
       <section id="themes" className="border-t border-rule scroll-mt-24">
@@ -279,7 +241,7 @@ export default function LandingPage() {
                 <span aria-hidden className="block w-4 h-px bg-accent -rotate-[18deg]" />
               </p>
               <h2 className="font-heading text-[clamp(30px,5vw,40px)] font-light italic leading-tight text-foreground [text-wrap:balance]">
-                Same photographs. {themeCountWord} deliberate designs.
+                Now try them live. The real renderer, right here.
               </h2>
             </div>
           </Reveal>
@@ -324,6 +286,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Prints in the light: parallax spread ─────────────── */}
+      <PrintsInLight />
 
       {/* ── Use cases ───────────────────────────────────────── */}
       <section className="border-t border-rule">
