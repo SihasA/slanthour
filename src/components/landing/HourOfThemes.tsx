@@ -212,15 +212,6 @@ function StageCard({ stage }: { stage: Stage }) {
           <div className="relative mx-auto w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={stage.img} alt={stage.alt} loading="lazy" className="block w-auto h-auto max-h-[42vh]" />
-            {/* Specimen engraving, laid over the plate corner */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/landing/engraving.jpg"
-              alt=""
-              aria-hidden
-              loading="lazy"
-              className="absolute -left-[12%] -bottom-[4%] w-[42%] -rotate-[5deg] shadow-[6px_10px_24px_rgba(0,0,0,0.55)]"
-            />
           </div>
           <div className="mt-[5%] mb-[2%] text-center">
             <p className="text-[9px] uppercase tracking-[0.3em] text-[#8fc7a4]/80" style={{ fontFamily: "var(--font-dm-mono), monospace" }}>
