@@ -4,7 +4,7 @@
 // A scroll-driven theatre: the viewport pins while scroll re-develops
 // the same golden-hour shoot through the eight theme identities. Each
 // stage is marketing chrome (mat, film strip, tape, letterbox, label,
-// postcard, riso card, arch) in the theme's real display font — the
+// postcard, riso card, engraved plate) in the theme's real display font — the
 // live product render sits right below in the ThemeShowcase, and the
 // annotation says so honestly.
 //
@@ -30,7 +30,7 @@ interface Stage {
     | "label"
     | "postcard"
     | "riso"
-    | "arch";
+    | "plate";
 }
 
 const STAGES: Stage[] = [
@@ -101,10 +101,10 @@ const STAGES: Stage[] = [
     id: "verdigris",
     name: "Verdigris",
     font: "var(--font-spectral), serif",
-    line: "A botanical dusk. Arched plates, a quiet green patina.",
-    img: "/landing/botanical.jpg",
-    alt: "Olive branch shadows in an arched botanical plate",
-    chrome: "arch",
+    line: "A botanical dusk. Engraved plates, a quiet green patina.",
+    img: "/landing/verdigris.jpg",
+    alt: "Dusk light through a conservatory, set as an engraved botanical plate",
+    chrome: "plate",
   },
 ];
 
@@ -203,16 +203,33 @@ function StageCard({ stage }: { stage: Stage }) {
           </p>
         </div>
       );
-    case "arch":
+    case "plate":
       return (
-        <div className="bg-[#101511] p-[8%] pb-[6%]">
-          <div className="overflow-hidden rounded-t-[999px] border border-[#5d7d5a]/40">
+        <div className="relative bg-[#22382c] p-[7%] pb-[5%]">
+          {/* Filigree double rule, engraved into the plate */}
+          <span aria-hidden className="pointer-events-none absolute inset-[3%] border border-[#8fc7a4]/30" />
+          <span aria-hidden className="pointer-events-none absolute inset-[4.2%] border border-[#8fc7a4]/15" />
+          <div className="relative mx-auto w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={stage.img} alt={stage.alt} loading="lazy" className="w-full h-auto max-h-[46vh] object-cover" />
+            <img src={stage.img} alt={stage.alt} loading="lazy" className="block w-auto h-auto max-h-[42vh]" />
+            {/* Specimen engraving, laid over the plate corner */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/landing/engraving.jpg"
+              alt=""
+              aria-hidden
+              loading="lazy"
+              className="absolute -left-[12%] -bottom-[4%] w-[42%] -rotate-[5deg] shadow-[6px_10px_24px_rgba(0,0,0,0.55)]"
+            />
           </div>
-          <p className="mt-4 text-center text-[12px] italic text-[#9db99a]" style={{ fontFamily: stage.font }}>
-            Olea europaea · last light
-          </p>
+          <div className="mt-[5%] mb-[2%] text-center">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-[#8fc7a4]/80" style={{ fontFamily: "var(--font-dm-mono), monospace" }}>
+              pl. viii
+            </p>
+            <p className="mt-1 text-[13px] italic text-[#eae3cf]" style={{ fontFamily: stage.font }}>
+              Olea europaea · gathered at the last hour
+            </p>
+          </div>
         </div>
       );
   }
