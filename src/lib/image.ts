@@ -85,6 +85,25 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
+// ─── Proofing upload preparation ─────────────────────────────────────
+// Proofing galleries serve sm/md only (MONETIZATION_PLAN.md §3.7):
+// no lg/xl, no blur placeholder — a shoot is hundreds of photos and
+// every byte per row and per view is the marginal cost.
+
+export interface PreparedProofingUpload {
+  variants: { md: Blob; sm: Blob };
+  width: number;
+  height: number;
+}
+
+export async function prepareProofingUpload(file: File): Promise<PreparedProofingUpload> {
+  const [md, sm] = await Promise.all([
+    compressImage(file, MEDIA_VARIANTS.md),
+    compressImage(file, MEDIA_VARIANTS.sm),
+  ]);
+  return { variants: { md: md.blob, sm: sm.blob }, width: md.width, height: md.height };
+}
+
 export async function prepareUpload(
   file: File,
   opts?: { hiFi?: boolean }

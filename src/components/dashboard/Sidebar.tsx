@@ -12,6 +12,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Pages" },
+  { href: "/proofing", label: "Proofing" },
   { href: "/settings/profile", label: "Profile" },
   { href: "/settings/account", label: "Account" },
 ];

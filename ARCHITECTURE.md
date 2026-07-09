@@ -45,9 +45,15 @@ Authenticated:
 | `/dashboard` | The user's pages, with lifecycle actions |
 | `/pages/new` | Create a page → redirect into the editor |
 | `/editor/:pageId` | The section editor (sections · live preview · inspector) |
+| `/proofing`, `/proofing/:galleryId` | Proofing dashboard: gallery list + management (Pro/Studio) |
 | `/settings/profile`, `/settings/account` | Profile and account management |
 
-API route handlers: `/api/media` + `/api/media/:id` (upload / delete), `/api/auth/callback`
+Anonymous (shared privately, never indexed): `/proof/:slug` — a client proofing gallery
+(unguessable slug, optional password gate; see §10).
+
+API route handlers: `/api/media` + `/api/media/:id` (upload / delete),
+`/api/proofing/:galleryId/images` (owner proofing upload),
+`/api/proof/:slug/select` (anonymous pick toggle, gated), `/api/auth/callback`
 (OAuth). The `/arborAI` page and `/api/arbor/*` handlers belong to a **separate product**
 (Arbor) and are retained untouched — see §16.
 
@@ -266,6 +272,21 @@ Everything except the payment provider is built (see MONETIZATION_PLAN.md):
 - **Keepsake pages** — `permanent_grants` rows (10-year `guaranteed_until`) exempt a page
   from `maxPages` and remove the badge; the T&C provision is live on /terms. Purchase flow
   arrives with the provider.
+- **Proofing galleries** (§3.7, built 9 Jul) — the client-selects-favourites workflow.
+  Three tables (`20260709000000_proofing.sql`): `proofing_galleries` (owner, title,
+  unguessable 20-char `slug`, optional `password_hash`, `status active|archived`),
+  `proofing_images` (md storage path + the client's ORIGINAL `filename` — the Lightroom
+  deliverable — plus batch `position`), `proofing_selections` (row-exists = picked; one
+  shared set per gallery, no client accounts). Entitlement `proofingGalleries` counts
+  ACTIVE galleries only (free/hobby 0, pro 3, studio unlimited); archiving closes the
+  `/proof` link and frees a slot, re-activating re-checks the limit. Images are md+sm
+  ONLY (~100KB/photo, generated client-side by `prepareProofingUpload`) — lg/xl never
+  exist for proofing, so previews stay small by construction. Gallery rows are not
+  anon-readable (enumeration defence, same posture as password pages): `/proof/:slug`
+  and the selection endpoint read via the service-role client with checks in code, and
+  a password gallery sets an HMAC gate cookie namespaced separately from the page gate
+  (`src/lib/proofing-gate.ts`). Owner mutations live in `src/lib/actions/proofing.ts`;
+  gallery deletion removes storage objects first (rows cascade).
 
 ---
 
@@ -322,6 +343,7 @@ consumed only by the Arbor product. Secrets live in `.env.local` (gitignored).
 
 ```
 {userId}/m/{assetId}/lg.jpg | md.jpg | sm.jpg   # platform uploads (variants)
+{userId}/p/{galleryId}/{imageId}/md.jpg | sm.jpg # proofing previews (never lg/xl)
 {userId}/photos/...                             # legacy portfolio images (still referenced)
 {userId}/banner.jpg                             # legacy banner
 ```
