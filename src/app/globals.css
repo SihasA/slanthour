@@ -36,12 +36,17 @@ body {
 
 /* ─── Landing: entrance choreography, texture, ink details ─── */
 
+/* Entrance fades start at 0.02, not 0: content painted fully transparent
+   is excluded from LCP candidacy, and the compositor-driven fade never
+   repaints, so Chrome scored the tiny header logo as LCP instead of the
+   headline or hero photograph. Barely visible counts as painted; the
+   look is unchanged. */
 @keyframes riseIn {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0.02; transform: translateY(18px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes photoIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  from { opacity: 0.02; transform: translateY(16px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
 @keyframes slowDrift {
@@ -50,12 +55,12 @@ body {
 }
 
 .rise-in {
-  opacity: 0;
+  opacity: 0.02;
   animation: riseIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--rise-delay, 0ms);
 }
 .photo-in {
-  opacity: 0;
+  opacity: 0.02;
   animation: photoIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--rise-delay, 0ms);
 }
