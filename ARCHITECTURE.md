@@ -298,6 +298,25 @@ Everything except the payment provider is built (see MONETIZATION_PLAN.md):
 - **Keepsake pages** — `permanent_grants` rows (10-year `guaranteed_until`) exempt a page
   from `maxPages` and remove the badge; the T&C provision is live on /terms. Purchase flow
   arrives with the provider.
+- **Static archive export** (§3.5, built 10 Jul) — `src/lib/keepsake/*` + the route handler
+  at `/api/keepsake/[pageId]/archive` (owner-only, grant-gated, `page.published` only —
+  drafts never leak). The step-0 spike found that calling `renderToStaticMarkup` inside a
+  route handler is rejected by Next's build (a hard webpack guardrail on the App Router's
+  react-server condition, not a soft warning), so the HTML comes from Next's own SSR
+  instead: an owner-guarded internal page (`/keepsake-view/[pageId]`, reserved slug, gated
+  in middleware) renders the real `<PageRenderer/>` exactly like the live published route,
+  and the route handler self-fetches it (forwarding the caller's cookie) and extracts the
+  `.sh-page` subtree by counting balanced `<div>` tags (safe because React escapes user
+  text, so a caption can never forge a tag boundary). From there: Tailwind is compiled at
+  export time against that exact rendered HTML (`content: [{ raw, extension: "html" }]`,
+  zero drift), image URLs are localized to `images/<key>.jpg` (collected from whichever
+  variant/watermark state the render actually used, not assumed), and reveal/opacity
+  animations are force-un-hidden via CSS override since the archive has no JS to run them.
+  A hand-rolled store-only ZIP writer (`src/lib/keepsake/zip.ts`, no new dependency)
+  streams `index.html` + `assets/style.css` + each image + `README.txt` from the route
+  handler as bytes become ready, bounded to ~6 concurrent image fetches so memory never
+  holds a whole large archive at once. Surfaced as "Download archive" in the dashboard's
+  page menu, shown only when a page has both a grant and is published.
 - **Proofing galleries** (§3.7, built 9 Jul) — the client-selects-favourites workflow.
   Three tables (`20260709000000_proofing.sql`): `proofing_galleries` (owner, title,
   unguessable 20-char `slug`, optional `password_hash`, `status active|archived`),

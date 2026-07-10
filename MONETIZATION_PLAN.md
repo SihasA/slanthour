@@ -118,11 +118,17 @@ Vercel Domains API + `domains` table + middleware host rewrite. Still the
 most-cited reason photographers pay; sequenced after proofing because proofing
 is what makes the paid ladder coherent.
 
-### 3.5 Keepsake permanent pages — model shipped, purchase flow phase 2
+### 3.5 Keepsake permanent pages — model + static archive shipped, purchase flow phase 2
 `permanent_grants` table live; a granted page is exempt from page limits,
-carries no badge, and only the owner can unpublish it. Static archive download
-ships with the purchase flow (it is the credibility half of the product): a
-self-contained zip of the published snapshot. Terms provision live (§6).
+carries no badge, and only the owner can unpublish it. Static archive export
+is live end to end (built 10 Jul, §8): the dashboard offers "Download
+archive" on any granted, published page, streaming a self-contained zip from
+a route handler — real PageRenderer output, Tailwind compiled against that
+exact markup, images localized to files, reveal animations neutralized for
+no-JS viewing. Grants themselves are still only created by the billing
+effects lib (`src/lib/billing/effects.ts`), so the download exists end to
+end but nobody can buy their way to one until checkout ships (Phase 2, §4).
+Terms provision live (§6).
 
 ### 3.6 Keep-originals add-on — **dropped**
 Cut by the not-an-archive principle (8 Jul). The need it served is now met by
@@ -225,7 +231,12 @@ Shipped and provider-independent:
   client-side at upload (all tiers, new uploads only), corner wordmark of the owner's name,
   per-page toggle frozen into the published snapshot like other display settings. Migration
   `20260710000000_media_watermark.sql` awaits review before touching prod.
-- [ ] Static archive export (§3.5) — ships with the Keepsake purchase flow.
+- [x] Static archive export (§3.5) — built 10 Jul: owner-only, grant-gated route
+  handler (`/api/keepsake/[pageId]/archive`) streams a zip of the real PageRenderer
+  output (Tailwind compiled at export time against that exact HTML, images
+  localized to files, reveal animations neutralized for no-JS viewing). No new
+  dependency (hand-rolled store-only zip writer), no migration. Still waits on
+  the purchase flow (Phase 2) — grants aren't purchasable yet.
 - [ ] Cloudflare free CDN in front of site + storage (pre-launch, see §5).
 - [ ] Local tax advice on foreign income (non-blocking).
 - [ ] Landing copy rewrite when billing opens.

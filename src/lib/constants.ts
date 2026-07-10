@@ -75,6 +75,7 @@ export const RESERVED_SLUGS = [
   "static",
   "public",
   "demo",
+  "keepsake-view",
   "slanthour",
   "arborai",
   "arbor",

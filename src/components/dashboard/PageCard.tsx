@@ -36,11 +36,14 @@ export function PageCard({
   page,
   username,
   views = null,
+  keepsake = false,
 }: {
   page: DashboardPage;
   username: string;
   /** 30-day view count; null hides the stat (viewer's tier lacks analytics). */
   views?: number | null;
+  /** Page has a permanent_grants row (Keepsake purchase) — offers the archive download. */
+  keepsake?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -172,6 +175,16 @@ export function PageCard({
                 >
                   Unpublish
                 </button>
+              )}
+              {keepsake && page.is_published && (
+                <a
+                  role="menuitem"
+                  href={`/api/keepsake/${page.id}/archive`}
+                  download
+                  className="block w-full text-left px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface transition-colors"
+                >
+                  Download archive
+                </a>
               )}
               <button
                 role="menuitem"
