@@ -1,8 +1,16 @@
 import Link from "next/link";
+import ReactDOM from "react-dom";
 import { ThemeShowcase } from "@/components/landing/ThemeShowcase";
 import { MobileCta } from "@/components/landing/MobileCta";
 import { Reveal } from "@/components/landing/Reveal";
 import { THEME_IDS } from "@/themes/registry";
+
+// The hero photograph is the LCP element. Preload it (homepage-scoped —
+// page.tsx is a Server Component, so this does not touch the global
+// layout head) with the exact same srcset/sizes as the <img> below.
+const HERO_SRCSET =
+  "/landing/wedding-800.jpg 800w, /landing/wedding-1200.jpg 1200w, /landing/wedding.jpg 1600w";
+const HERO_SIZES = "(min-width: 1240px) 1200px, 100vw";
 
 // ─── The calm homepage: a gallery at closing time ─────────────────────
 // One photograph, a few words, one door in. The live renderer does the
@@ -35,6 +43,13 @@ export default function LandingPage() {
   const themeCountWord =
     ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"][themeCount] ??
     String(themeCount);
+
+  ReactDOM.preload("/landing/wedding-1200.jpg", {
+    as: "image",
+    fetchPriority: "high",
+    imageSrcSet: HERO_SRCSET,
+    imageSizes: HERO_SIZES,
+  });
 
   return (
     <div className="min-h-screen">
@@ -124,16 +139,19 @@ export default function LandingPage() {
 
         <figure
           className="max-w-[1200px] mx-auto mt-14 md:mt-20 photo-in"
-          style={{ "--rise-delay": "520ms" } as React.CSSProperties}
+          style={{ "--rise-delay": "0ms" } as React.CSSProperties}
         >
           <div className="relative aspect-[3/2] md:aspect-[21/10] border border-rule overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/landing/wedding.jpg"
+              srcSet={HERO_SRCSET}
+              sizes={HERO_SIZES}
               alt="A couple backlit by low golden sun, the veil catching the light"
               width={1600}
               height={1066}
               fetchPriority="high"
+              decoding="async"
               className="w-full h-full object-cover slow-drift"
             />
             <span aria-hidden className="light-sweep" />

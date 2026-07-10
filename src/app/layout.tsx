@@ -36,6 +36,7 @@ const libreBaskerville = Libre_Baskerville({
   style: ["normal", "italic"],
   variable: "--font-libre-baskerville",
   display: "swap",
+  preload: false,
 });
 
 const inter = Inter({
@@ -51,6 +52,7 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["300", "400", "500"],
   variable: "--font-space-grotesk",
   display: "swap",
+  preload: false,
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -58,6 +60,7 @@ const ibmPlexMono = IBM_Plex_Mono({
   weight: ["300", "400"],
   variable: "--font-ibm-plex-mono",
   display: "swap",
+  preload: false,
 });
 
 // ─── Keepsake annotation font ────────────────────────────────
@@ -66,6 +69,7 @@ const caveat = Caveat({
   weight: ["400", "600"],
   variable: "--font-caveat",
   display: "swap",
+  preload: false,
 });
 
 // ─── Riviera display font ────────────────────────────────────
@@ -75,6 +79,7 @@ const fraunces = Fraunces({
   style: ["normal", "italic"],
   variable: "--font-fraunces",
   display: "swap",
+  preload: false,
 });
 
 // ─── Klaxon display font ─────────────────────────────────────
@@ -83,6 +88,7 @@ const archivo = Archivo({
   weight: ["400", "500", "700", "900"],
   variable: "--font-archivo",
   display: "swap",
+  preload: false,
 });
 
 // ─── Verdigris display font ──────────────────────────────────
@@ -92,31 +98,30 @@ const spectral = Spectral({
   style: ["normal", "italic"],
   variable: "--font-spectral",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://slanthour.com"),
-  title: "Slant Hour · A home for your best work",
+  title: "Slanthour · A home for your best work",
   description:
-    "A curated portfolio platform for photographers and visual creatives. No algorithm, no noise. Just your best photographs, presented beautifully.",
+    "A home for photos that deserve more than a post. Upload a collection and publish one quietly designed page, not a feed.",
   icons: {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "Slant Hour",
+    title: "Slanthour",
     description:
-      "A curated portfolio platform for photographers and visual creatives.",
+      "A home for photos that deserve more than a post. Upload a collection and publish one quietly designed page, not a feed.",
     url: "https://slanthour.com",
-    siteName: "Slant Hour",
+    siteName: "Slanthour",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Slant Hour",
+    title: "Slanthour",
     description:
-      "A curated portfolio platform for photographers and visual creatives.",
-    images: ["/og-image.png"],
+      "A home for photos that deserve more than a post. Upload a collection and publish one quietly designed page, not a feed.",
   },
 };
 
