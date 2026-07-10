@@ -15,7 +15,9 @@ export function MobileCta() {
 
   useEffect(() => {
     const hero = document.getElementById("hero");
-    const footer = document.querySelector("footer");
+    // The theme showcase renders a page document with its own <footer>, so
+    // target the site footer by id rather than the first footer in the DOM.
+    const footer = document.getElementById("site-footer") ?? document.querySelector("footer");
     if (!hero || !footer) return;
 
     const heroWatch = new IntersectionObserver(

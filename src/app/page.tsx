@@ -49,8 +49,8 @@ export default function LandingPage() {
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 bg-background/90 backdrop-blur-md">
         <div className="flex items-center justify-between gap-3 py-5">
-          <img src="/brand/logo-light.svg" alt="Slanthour" className="h-7 sm:h-8 w-auto shrink-0" />
-          <nav className="flex items-center gap-5 md:gap-8 whitespace-nowrap">
+          <img src="/brand/logo-light.svg" alt="Slanthour" className="h-6 sm:h-8 w-auto shrink-0" />
+          <nav className="flex items-center gap-4 md:gap-8 whitespace-nowrap">
             <Link
               href="/pricing"
               className="text-[10px] uppercase tracking-wide text-muted hover:text-foreground transition-colors"
@@ -220,7 +220,10 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ──────────────────────────────────────────── */}
-      <footer className="border-t border-rule px-6 md:px-12 py-7 flex flex-col md:flex-row justify-between items-center gap-3">
+      <footer
+        id="site-footer"
+        className="border-t border-rule px-6 md:px-12 py-7 flex flex-col md:flex-row justify-between items-center gap-3"
+      >
         <img src="/brand/logo-light.svg" alt="Slanthour" className="h-6 w-auto opacity-50" />
         <nav className="flex items-center gap-6">
           <Link href="/demo" className="text-[9px] uppercase tracking-wide text-muted/60 hover:text-muted transition-colors">
