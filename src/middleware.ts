@@ -2,6 +2,21 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  // If an auth code landed on the home page (Supabase fallback), forward it to the callback route
+  if (path === "/" && request.nextUrl.searchParams.get("code")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/auth/callback";
+    return NextResponse.redirect(url);
+  }
+
+  // The home page reads no auth state, so it shouldn't block on Supabase —
+  // a slow or unavailable auth API must never take the marketing page down.
+  if (path === "/") {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -25,19 +40,10 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // If an auth code landed on the home page (Supabase fallback), forward it to the callback route
-  if (request.nextUrl.pathname === "/" && request.nextUrl.searchParams.get("code")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/api/auth/callback";
-    return NextResponse.redirect(url);
-  }
-
   // Refresh the auth token — important for Server Components
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
 
   // Protect authenticated application routes
   const isProtected = ["/dashboard", "/editor", "/settings", "/pages"].some(
