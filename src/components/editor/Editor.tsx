@@ -199,6 +199,10 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
         dispatch={dispatch}
         hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
         watermarkLabel={watermarkLabel}
+        pageCapacityLeft={Math.max(
+          0,
+          getProfileEntitlements(profile).maxImagesPerPage - countImages(state.content.document)
+        )}
       />
     ) : id === "theme" ? (
       <ThemePanel content={state.content} dispatch={dispatch} />

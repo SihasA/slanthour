@@ -297,7 +297,14 @@ export async function savePageDraft(
   const { data: profile } = await supabase
     .from("profiles").select("tier, tier_expires_at").eq("id", user.id).single();
   const entitlements = getProfileEntitlements(profile);
-  if (countImages(document) > entitlements.maxImagesPerPage)
+  // Only block saves that push the image count HIGHER past the cap. Rejecting
+  // every save once a page is already over cap (a tier lapse or downgrade
+  // below its existing count) would lock the editor on a pure text edit —
+  // the editor is never paywalled. A save that keeps or lowers the count
+  // always goes through so the owner can edit their way back under.
+  const priorImages = countImages(parseDocument(page.draft));
+  const nextImages = countImages(document);
+  if (nextImages > entitlements.maxImagesPerPage && nextImages > priorImages)
     return err(`Your plan allows ${entitlements.maxImagesPerPage} images per page.`);
 
   const cover = firstImage(document);
