@@ -96,7 +96,7 @@ async function main() {
 
   // 3. Page — draft + frozen published snapshot, published + public.
   const now = new Date().toISOString();
-  const snapshot = { snapshotVersion: 1, document, theme: THEME, themeSettings: {}, title: TITLE, publishedAt: now };
+  const snapshot = { snapshotVersion: 1, document, theme: THEME, themeSettings: {}, title: TITLE, cover: null, publishedAt: now };
   const row = {
     user_id: user.id,
     slug: SLUG,

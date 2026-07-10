@@ -410,12 +410,18 @@ export async function publishPage(pageId: string): Promise<ActionResult<{ url: s
   // the page payload (leaking drafts and paying egress for nothing).
   const { tray: _tray, ...publishedDocument } = document;
 
+  // Freeze the cover into the snapshot. Public surfaces read this, never the
+  // live pages.cover_path column, which autosave keeps pointed at the draft.
+  const cover = firstImage(publishedDocument);
+  const coverPath = cover && !cover.path.startsWith("http") ? cover.path : null;
+
   const snapshot: PublishedSnapshot = {
     snapshotVersion: 1,
     document: publishedDocument,
     theme: page.theme,
     themeSettings: sanitizeThemeSettings(page.theme, page.theme_settings),
     title: page.title,
+    cover: coverPath,
     publishedAt: new Date().toISOString(),
   };
 

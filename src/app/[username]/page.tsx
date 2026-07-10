@@ -10,13 +10,18 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { storageUrl } from "@/lib/media";
 import { getTheme } from "@/themes/registry";
-import type { Page, Profile } from "@/types";
+import type { PublishedSnapshot } from "@/lib/page-document";
+import type { Profile } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 type RouteProps = { params: Promise<{ username: string }> };
 
-type PageCard = Pick<Page, "id" | "slug" | "title" | "theme" | "cover_path" | "published_at">;
+// Title and cover come from the frozen published snapshot, never the live
+// pages.title/cover_path columns (autosave keeps those pointed at the
+// unpublished draft, which would leak onto this public surface).
+type PageRow = { id: string; slug: string; theme: string; published: PublishedSnapshot | null };
+type PageCard = { id: string; slug: string; theme: string; title: string; cover: string | null };
 
 // Profile + its published public pages in one round trip (pages embedded
 // through the user_id FK; RLS only exposes published public rows to anon),
@@ -25,15 +30,22 @@ const loadProfile = cache(async (username: string) => {
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*, pages(id, slug, title, theme, cover_path, published_at)")
+    .select("*, pages(id, slug, theme, published, published_at)")
     .eq("username", username)
     .eq("pages.is_published", true)
     .eq("pages.visibility", "public")
     .order("published_at", { referencedTable: "pages", ascending: false })
     .single();
   if (!profile) return null;
-  const { pages, ...rest } = profile as Profile & { pages: PageCard[] };
-  return { profile: rest as Profile, cards: pages ?? [] };
+  const { pages, ...rest } = profile as Profile & { pages: PageRow[] };
+  const cards: PageCard[] = (pages ?? []).map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    theme: p.theme,
+    title: p.published?.title ?? "Untitled",
+    cover: p.published?.cover ?? null,
+  }));
+  return { profile: rest as Profile, cards };
 });
 
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
@@ -91,10 +103,10 @@ export default async function ProfilePage({ params }: RouteProps) {
               <li key={page.id}>
                 <Link href={`/${p.username}/${page.slug}`} className="group block">
                   <div className="aspect-[4/3] overflow-hidden bg-surface border border-rule">
-                    {page.cover_path ? (
+                    {page.cover ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={storageUrl(page.cover_path)}
+                        src={storageUrl(page.cover)}
                         alt=""
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.02]"

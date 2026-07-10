@@ -172,13 +172,17 @@ export function displaySettings(doc: PageDocument): PageDisplaySettings {
   return doc.settings ?? DEFAULT_DISPLAY_SETTINGS;
 }
 
-/** Frozen snapshot written on publish; the only thing public routes read. */
+/** Frozen snapshot written on publish; the only thing public routes read.
+ * `cover` is frozen here too so public surfaces (profile cards, OG images)
+ * never read the live draft columns, which autosave keeps current with the
+ * unpublished draft. */
 export interface PublishedSnapshot {
   snapshotVersion: 1;
   document: PageDocument;
   theme: string;
   themeSettings: Record<string, unknown>;
   title: string;
+  cover: string | null;
   publishedAt: string;
 }
 
