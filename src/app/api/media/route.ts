@@ -37,7 +37,9 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from("media_assets")
-    .select("id, storage_path, has_variants, has_xl, filename, width, height, blur_data_url, created_at")
+    .select(
+      "id, storage_path, has_variants, has_xl, has_watermark, filename, width, height, blur_data_url, created_at"
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
@@ -107,6 +109,43 @@ export async function POST(request: Request) {
     }
   }
 
+  // Optional watermarked siblings — available to every tier (§3.9), unlike
+  // xl, so no entitlement check here. Accepted only as a complete lg/md/sm
+  // set; an incomplete or invalid set is dropped silently, the same
+  // stale-client tolerance as xl. wm_xl is accepted only when the clean xl
+  // itself was accepted, so a watermarked hi-fi variant never outlives its
+  // clean counterpart.
+  const wmBytes: Partial<Record<(typeof VARIANT_KEYS)[number], Uint8Array>> & { xl?: Uint8Array } = {};
+  const wmLgBlob = form.get("wm_lg");
+  const wmMdBlob = form.get("wm_md");
+  const wmSmBlob = form.get("wm_sm");
+  if (wmLgBlob instanceof Blob && wmMdBlob instanceof Blob && wmSmBlob instanceof Blob) {
+    const candidates: Partial<Record<(typeof VARIANT_KEYS)[number], Uint8Array>> = {};
+    let allOk = true;
+    for (const [key, blob] of [
+      ["lg", wmLgBlob],
+      ["md", wmMdBlob],
+      ["sm", wmSmBlob],
+    ] as const) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const check = checkUploadedImage(bytes);
+      if (!check.ok) {
+        allOk = false;
+        break;
+      }
+      candidates[key] = bytes;
+    }
+    if (allOk) {
+      Object.assign(wmBytes, candidates);
+      const wmXlBlob = form.get("wm_xl");
+      if (xlBytes && wmXlBlob instanceof Blob) {
+        const bytes = new Uint8Array(await wmXlBlob.arrayBuffer());
+        const check = checkUploadedImage(bytes);
+        if (check.ok) wmBytes.xl = bytes;
+      }
+    }
+  }
+
   const dims = checkDimensions(form.get("width"), form.get("height"));
   if (!dims) return NextResponse.json({ error: "Invalid image dimensions." }, { status: 400 });
   const blur = checkBlurDataUrl(form.get("blur"));
@@ -120,6 +159,10 @@ export async function POST(request: Request) {
     (key) => [key, variants[key]!]
   );
   if (xlBytes) toWrite.push(["xl", xlBytes]);
+  if (wmBytes.lg) toWrite.push(["lg.wm", wmBytes.lg]);
+  if (wmBytes.md) toWrite.push(["md.wm", wmBytes.md]);
+  if (wmBytes.sm) toWrite.push(["sm.wm", wmBytes.sm]);
+  if (wmBytes.xl) toWrite.push(["xl.wm", wmBytes.xl]);
 
   for (const [key, bytes] of toWrite) {
     const path = `${dir}/${key}.jpg`;
@@ -142,6 +185,7 @@ export async function POST(request: Request) {
       storage_path: `${dir}/lg.jpg`,
       has_variants: true,
       has_xl: xlBytes !== null,
+      has_watermark: wmBytes.lg !== undefined,
       filename,
       width: dims.width,
       height: dims.height,

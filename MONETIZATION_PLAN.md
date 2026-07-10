@@ -35,7 +35,7 @@ finance note; the summary is in §5.
 | Custom domain (phase 4) | — | — | 1 domain | 5 domains |
 | Proofing galleries (§3.7, coming) | — | — | 3 active | Unlimited |
 | Hi-fi client downloads (§3.8, coming) | — | — | — | ✓ |
-| Watermarking (§3.9, coming) | ✓ | ✓ | ✓ | ✓ |
+| Watermarking (§3.9) | ✓ | ✓ | ✓ | ✓ |
 | Sub-account seats | — | — | — | Later |
 
 **Keepsake page — $39 one-time, per page.** Stays published as long as
@@ -151,11 +151,14 @@ A showcase page's owner can enable client download of the xl variants (zip or
 per-photo). This is the delivery story: high fidelity in resolution,
 aggressively optimized in bytes, and described exactly that way in the UI.
 
-### 3.9 Watermarking (all tiers) — phase 3, with proofing
-Opt-in per page or per upload. Preferred implementation: generate watermarked
-*and* clean variants at upload and toggle at render time; storage roughly
-doubles per photo (0.55MB → 1.1MB) which is still negligible, and turning a
-watermark off never requires a re-upload. Decide final UX at build time.
+### 3.9 Watermarking (all tiers) — phase 3, with proofing — shipped 10 Jul
+Built as planned: dual variants at upload (clean + name-stamped), a per-page
+toggle decides which one visitors get, and turning it off never requires a
+re-upload. Final UX decisions: a single bottom-right corner wordmark (owner's
+`display_name`, falling back to `@username`) rather than diagonal tiling —
+crop-resistant protection is already proofing's job, and a corner mark reads
+premium instead of like stock-photo watermarking. New uploads only; storage
+roughly doubles per photo (0.55MB → 1.1MB), as pre-accepted here.
 
 ## 4. Phasing
 
@@ -218,7 +221,10 @@ Shipped and provider-independent:
       checkout + webhook (reduces to the effects lib).
 - [x] Proofing galleries (§3.7) — built 9 Jul (dashboard + client gallery + select-list
   export). Migration `20260709000000_proofing.sql` awaits review before touching prod.
-- [ ] Watermarking (§3.9) — still open; ships next.
+- [x] Watermarking (§3.9) — built 10 Jul: dual `{lg,md,sm,xl}.wm.jpg` variants generated
+  client-side at upload (all tiers, new uploads only), corner wordmark of the owner's name,
+  per-page toggle frozen into the published snapshot like other display settings. Migration
+  `20260710000000_media_watermark.sql` awaits review before touching prod.
 - [ ] Static archive export (§3.5) — ships with the Keepsake purchase flow.
 - [ ] Cloudflare free CDN in front of site + storage (pre-launch, see §5).
 - [ ] Local tax advice on foreign income (non-blocking).

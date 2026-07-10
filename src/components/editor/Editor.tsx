@@ -17,6 +17,7 @@ import {
 import { countImages, displaySettings } from "@/lib/page-document";
 import { savePageDraft, publishPage, unpublishPage } from "@/lib/actions/pages";
 import { getProfileEntitlements } from "@/lib/entitlements";
+import { resolveWatermarkLabel } from "@/lib/watermark";
 import { PageRenderer } from "@/themes/PageRenderer";
 import type { Page, Profile } from "@/types";
 import type { ThemeSettings } from "@/themes/types";
@@ -34,6 +35,10 @@ const AUTOSAVE_DELAY_MS = 1200;
 
 export function Editor({ page, profile }: { page: Page; profile: Profile }) {
   const router = useRouter();
+  // Computed once: the corner-stamp text baked into watermarked variants at
+  // upload (all tiers). Never touches ProfileSettingsForm/avatars — only
+  // passed to page-photo uploaders below.
+  const watermarkLabel = resolveWatermarkLabel(profile.display_name, profile.username);
   const [state, dispatch] = useReducer(
     editorReducer,
     initialEditorState({
@@ -193,6 +198,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
         theme={state.content.theme}
         dispatch={dispatch}
         hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
+        watermarkLabel={watermarkLabel}
       />
     ) : id === "theme" ? (
       <ThemePanel content={state.content} dispatch={dispatch} />
@@ -355,6 +361,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
             theme={state.content.theme}
             dispatch={dispatch}
             hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
+            watermarkLabel={watermarkLabel}
             pageCapacityLeft={Math.max(
               0,
               getProfileEntitlements(profile).maxImagesPerPage - countImages(state.content.document)
@@ -447,6 +454,7 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
                   dispatch={dispatch}
                   onSelect={() => setMobilePanel("inspect")}
                   hiFiUploads={getProfileEntitlements(profile).hiFiUploads}
+                  watermarkLabel={watermarkLabel}
                   pageCapacityLeft={Math.max(
                     0,
                     getProfileEntitlements(profile).maxImagesPerPage -

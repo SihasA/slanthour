@@ -230,6 +230,12 @@ magic-byte sniffing (not trusting the declared MIME type), dimension and size ch
 success it writes `{userId}/m/{assetId}/{lg,md,sm}.jpg` to storage and records a
 `media_assets` row; any failure rolls back. The endpoint is rate-limited.
 
+When the caller has a name to stamp, the same client-side canvas pass also produces
+watermarked `{lg,md,sm}.wm.jpg` siblings (§3.9): dual variants at upload, unconditionally, so
+toggling the page setting later never needs a re-upload. EXIF/GPS is already stripped by the
+canvas re-encode before the watermark is drawn, so the watermarked files carry no more
+metadata than the clean ones.
+
 `DELETE /api/media/:id` refuses if any **published** snapshot still references the asset, so a
 delete can never break a live page. `GET /api/media` returns the caller's library
 (metadata only, cursor-paginated 60 at a time) for the reuse picker; the same asset can be
@@ -274,6 +280,17 @@ Everything except the payment provider is built (see MONETIZATION_PLAN.md):
 - **Hi-fi uploads** — Pro+ uploads also produce `xl.jpg` (2560px, q0.85), generated
   client-side, tier-checked server-side, surfaced through `imageSrcSet` and the Lightbox.
   Never an upscale: sources ≤2000px skip it. `media_assets.has_xl` / `PageImage.hasXl`.
+- **Watermarking** (§3.9, all tiers, shipped 10 Jul) — a bottom-right corner wordmark
+  (`display_name`, falling back to `@username`) baked into the pixels client-side
+  (`src/lib/image.ts` `drawWatermark`), never a CSS/DOM overlay, so PhotoRow/split/row
+  layouts are untouched by construction. New uploads generate `{lg,md,sm,xl}.wm.jpg`
+  siblings unconditionally (dual-at-upload, mirroring hi-fi `xl`); a per-page toggle
+  (`PageDisplaySettings.watermark`, defaults off) decides whether visitors get the clean or
+  marked file, resolved through `imageUrl`/`imageSrcSet`'s `watermarked` flag. `PageRenderer`
+  is the single choke point that forces the toggle off outside `mode="published"`, so the
+  editor preview, demo page and landing showcase always render clean. New-uploads-only:
+  photos uploaded before this feature render clean on a watermarked page until re-uploaded.
+  `media_assets.has_watermark` / `PageImage.hasWatermark`.
 - **Analytics** — cookie-less daily aggregates (`page_view_daily`, `increment_page_view`
   RPC, service-role only), recorded via `next/server` `after()` on the published route with
   bot/link-preview UA filtering and owner-visit exclusion. Recorded for everyone; shown on
@@ -351,7 +368,8 @@ consumed only by the Arbor product. Secrets live in `.env.local` (gitignored).
 ## 15. Storage layout
 
 ```
-{userId}/m/{assetId}/lg.jpg | md.jpg | sm.jpg   # platform uploads (variants)
+{userId}/m/{assetId}/lg.jpg | md.jpg | sm.jpg | xl.jpg       # platform uploads (variants)
+{userId}/m/{assetId}/lg.wm.jpg | md.wm.jpg | sm.wm.jpg | xl.wm.jpg # watermarked siblings
 {userId}/p/{galleryId}/{imageId}/md.jpg | sm.jpg # proofing previews (never lg/xl)
 {userId}/photos/...                             # legacy portfolio images (still referenced)
 {userId}/banner.jpg                             # legacy banner

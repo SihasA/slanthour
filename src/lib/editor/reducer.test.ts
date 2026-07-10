@@ -235,10 +235,18 @@ describe("display settings", () => {
   it("sets, patches and collapses back to absent", () => {
     let state = freshState();
     state = editorReducer(state, { type: "setDisplaySettings", patch: { protectPhotos: true } });
-    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full" });
+    expect(state.content.document.settings).toEqual({
+      protectPhotos: true,
+      maxPhotoRes: "full",
+      watermark: false,
+    });
 
     state = editorReducer(state, { type: "setDisplaySettings", patch: { maxPhotoRes: "md" } });
-    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "md" });
+    expect(state.content.document.settings).toEqual({
+      protectPhotos: true,
+      maxPhotoRes: "md",
+      watermark: false,
+    });
 
     state = editorReducer(state, {
       type: "setDisplaySettings",

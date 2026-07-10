@@ -24,12 +24,15 @@ export function MediaUploader({
   capacityLeft = Infinity,
   compact = false,
   hiFi = false,
+  watermarkLabel,
 }: {
   onUploaded: (images: PageImage[]) => void;
   capacityLeft?: number;
   compact?: boolean;
   /** Also generate the 2560px xl variant (Pro+; server re-checks the tier). */
   hiFi?: boolean;
+  /** Owner name/handle to stamp into the watermarked variants (all tiers). */
+  watermarkLabel?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -44,7 +47,7 @@ export function MediaUploader({
     const result = await uploadPhoto(
       file,
       (fraction) => patchItem(key, { progress: fraction }),
-      { hiFi }
+      { hiFi, watermarkLabel }
     );
     if (result.ok && result.asset) {
       setQueue((q) => q.filter((item) => item.key !== key));

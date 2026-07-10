@@ -22,6 +22,19 @@ export const MEDIA_VARIANT_XL = { maxDimension: 2560, quality: 0.85 } as const;
 export const MEDIA_BLUR_DIMENSION = 16;
 export const MEDIA_BUCKET = "portfolios"; // historical bucket name, kept for data continuity
 
+// Name-stamp watermark composited client-side onto lg/md/sm/xl variants at
+// upload (MONETIZATION_PLAN.md §3.9). Bottom-right corner wordmark; tuned to
+// stay legible without reading as heavy-handed stock-photo tiling.
+export const MEDIA_WATERMARK = {
+  opacity: 0.72,
+  shadowAlpha: 0.45,
+  sizeRatio: 0.035,
+  minSize: 11,
+  maxSize: 64,
+  padRatio: 0.04,
+  maxChars: 40,
+} as const;
+
 // ─── Reserved slugs ─────────────────────────────────────────
 // Blocked as usernames AND page slugs — they collide with (or could be
 // confused with) application routes.

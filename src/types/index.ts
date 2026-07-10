@@ -95,6 +95,8 @@ export interface MediaAsset {
   has_variants: boolean;
   /** A 2560px xl.jpg exists alongside lg/md/sm (hi-fi uploads, Pro+). */
   has_xl: boolean;
+  /** {lg,md,sm,xl}.wm.jpg siblings exist (name-stamped, all tiers). */
+  has_watermark: boolean;
   filename: string;
   width: number | null;
   height: number | null;

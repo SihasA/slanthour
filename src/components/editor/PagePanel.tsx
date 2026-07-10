@@ -234,6 +234,23 @@ export function PagePanel({
           </span>
         </label>
 
+        <label className="mt-3 flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={display.watermark}
+            onChange={(e) => onDisplayChange({ watermark: e.target.checked })}
+            className="mt-0.5 accent-current"
+          />
+          <span>
+            <span className="block text-[12px] text-foreground">Watermark published photos</span>
+            <span className="block text-[11px] text-muted font-copy">
+              Stamps your name on photos on the published page. Your editor and library stay
+              clean, and you can turn it off any time without re-uploading. Photos added before
+              this feature show unmarked until re-uploaded.
+            </span>
+          </span>
+        </label>
+
         <div className="mt-4" role="radiogroup" aria-label="Photo resolution served">
           <span className="block text-[11px] text-muted font-copy mb-1.5">Resolution served to visitors</span>
           <div className="space-y-1.5">

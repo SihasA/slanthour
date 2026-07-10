@@ -27,7 +27,7 @@ export function validateFileLocally(file: File): string | null {
 export async function uploadPhoto(
   file: File,
   onProgress?: (fraction: number) => void,
-  opts?: { hiFi?: boolean }
+  opts?: { hiFi?: boolean; watermarkLabel?: string }
 ): Promise<UploadResult> {
   const localError = validateFileLocally(file);
   if (localError) return { ok: false, error: localError };
@@ -44,6 +44,12 @@ export async function uploadPhoto(
   form.set("md", prepared.variants.md);
   form.set("sm", prepared.variants.sm);
   if (prepared.xl) form.set("xl", prepared.xl);
+  if (prepared.wm) {
+    form.set("wm_lg", prepared.wm.lg);
+    form.set("wm_md", prepared.wm.md);
+    form.set("wm_sm", prepared.wm.sm);
+    if (prepared.wm.xl) form.set("wm_xl", prepared.wm.xl);
+  }
   form.set("blur", prepared.blurDataUrl);
   form.set("width", String(prepared.width));
   form.set("height", String(prepared.height));

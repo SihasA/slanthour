@@ -4,6 +4,7 @@ import {
   MEDIA_VARIANTS,
   MEDIA_VARIANT_XL,
   MEDIA_BLUR_DIMENSION,
+  MEDIA_WATERMARK,
 } from "./constants";
 
 interface CompressResult {
@@ -15,6 +16,29 @@ interface CompressResult {
 interface CompressOptions {
   maxDimension?: number;
   quality?: number;
+  /** Owner name/handle to corner-stamp onto the compressed output. */
+  watermark?: string;
+}
+
+/** Corner-stamp `label` onto an already-drawn canvas. Bottom-right, semi-
+ * transparent white with a soft dark shadow for legibility on light photos. */
+function drawWatermark(
+  ctx: OffscreenCanvasRenderingContext2D,
+  w: number,
+  h: number,
+  label: string
+): void {
+  const { opacity, shadowAlpha, sizeRatio, minSize, maxSize, padRatio } = MEDIA_WATERMARK;
+  const s = Math.min(maxSize, Math.max(minSize, Math.round(Math.min(w, h) * sizeRatio)));
+  ctx.font = `600 ${s}px "Helvetica Neue", Arial, sans-serif`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "alphabetic";
+  ctx.shadowColor = `rgba(0,0,0,${shadowAlpha})`;
+  ctx.shadowBlur = s * 0.35;
+  ctx.shadowOffsetY = s * 0.06;
+  ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+  const pad = Math.round(Math.min(w, h) * padRatio);
+  ctx.fillText(label, w - pad, h - pad);
 }
 
 /**
@@ -53,6 +77,8 @@ export async function compressImage(
   ctx.drawImage(bitmap, 0, 0, targetW, targetH);
   bitmap.close();
 
+  if (options?.watermark) drawWatermark(ctx, targetW, targetH, options.watermark);
+
   const blob = await canvas.convertToBlob({
     type: "image/jpeg",
     quality,
@@ -71,6 +97,8 @@ export interface PreparedUpload {
   variants: { lg: Blob; md: Blob; sm: Blob };
   /** Hi-fi variant — present only for Pro+ uploads whose source out-resolves lg. */
   xl?: Blob;
+  /** Watermarked siblings — present only when a watermark label was given. */
+  wm?: { lg: Blob; md: Blob; sm: Blob; xl?: Blob };
   blurDataUrl: string;
   width: number;
   height: number;
@@ -106,7 +134,7 @@ export async function prepareProofingUpload(file: File): Promise<PreparedProofin
 
 export async function prepareUpload(
   file: File,
-  opts?: { hiFi?: boolean }
+  opts?: { hiFi?: boolean; watermarkLabel?: string }
 ): Promise<PreparedUpload> {
   const [lg, md, sm, blur, xl] = await Promise.all([
     compressImage(file, MEDIA_VARIANTS.lg),
@@ -118,9 +146,29 @@ export async function prepareUpload(
   // compressImage never upscales, so a source ≤2000px yields an xl identical
   // in pixels to lg — keep xl only when it genuinely carries more resolution.
   const xlIsLarger = xl !== null && Math.max(xl.width, xl.height) > Math.max(lg.width, lg.height);
+
+  // Watermarked siblings, generated unconditionally alongside the clean
+  // variants (all tiers, dual-at-upload) whenever the caller has a label to
+  // stamp — mirroring the hi-fi xl precedent exactly. wm-xl only when the
+  // clean xl was actually kept.
+  const label = opts?.watermarkLabel;
+  let wm: PreparedUpload["wm"];
+  if (label) {
+    const [wmLg, wmMd, wmSm, wmXl] = await Promise.all([
+      compressImage(file, { ...MEDIA_VARIANTS.lg, watermark: label }),
+      compressImage(file, { ...MEDIA_VARIANTS.md, watermark: label }),
+      compressImage(file, { ...MEDIA_VARIANTS.sm, watermark: label }),
+      xlIsLarger
+        ? compressImage(file, { ...MEDIA_VARIANT_XL, watermark: label })
+        : Promise.resolve(null),
+    ]);
+    wm = { lg: wmLg.blob, md: wmMd.blob, sm: wmSm.blob, xl: wmXl ? wmXl.blob : undefined };
+  }
+
   return {
     variants: { lg: lg.blob, md: md.blob, sm: sm.blob },
     xl: xlIsLarger ? xl.blob : undefined,
+    wm,
     blurDataUrl: await blobToDataUrl(blur.blob),
     width: lg.width,
     height: lg.height,

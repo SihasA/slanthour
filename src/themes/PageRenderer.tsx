@@ -49,7 +49,15 @@ export function PageRenderer({
         fontFamily: "var(--sh-body)",
       }}
     >
-      <PageDisplayProvider value={displaySettings(document)}>
+      <PageDisplayProvider
+        value={{
+          ...displaySettings(document),
+          // Baked-in watermarks serve on the published route only — the
+          // editor preview, demo page and landing showcase always stay
+          // clean (all render with mode="preview").
+          watermark: displaySettings(document).watermark && mode === "published",
+        }}
+      >
         <LightboxProvider enabled={lightbox}>
           <Renderer
             document={document}

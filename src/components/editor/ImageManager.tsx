@@ -196,12 +196,14 @@ export function ImageManager({
   allSections = [],
   dispatch,
   hiFiUploads = false,
+  watermarkLabel,
 }: {
   section: Section;
   /** Full section list, for the touch "Send to" menu. */
   allSections?: Section[];
   dispatch: React.Dispatch<EditorAction>;
   hiFiUploads?: boolean;
+  watermarkLabel?: string;
 }) {
   const images = sectionImages(section);
   const capacity = sectionImageCapacity(section.type);
@@ -236,6 +238,7 @@ export function ImageManager({
             compact={images.length > 0}
             capacityLeft={capacityLeft}
             hiFi={hiFiUploads}
+            watermarkLabel={watermarkLabel}
             onUploaded={(newImages) =>
               dispatch({ type: "addImages", sectionId: section.id, images: newImages })
             }

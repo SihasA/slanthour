@@ -215,6 +215,7 @@ export function SectionList({
   dispatch,
   onSelect,
   hiFiUploads = false,
+  watermarkLabel,
   pageCapacityLeft = Infinity,
 }: {
   // Stable DndContext id — without it dnd-kit's global counter diverges
@@ -227,6 +228,7 @@ export function SectionList({
   dispatch: React.Dispatch<EditorAction>;
   onSelect?: () => void;
   hiFiUploads?: boolean;
+  watermarkLabel?: string;
   /** Photos still allowed on this page (plan limit minus everything placed + tray). */
   pageCapacityLeft?: number;
 }) {
@@ -360,6 +362,7 @@ export function SectionList({
               compact
               capacityLeft={pageCapacityLeft}
               hiFi={hiFiUploads}
+              watermarkLabel={watermarkLabel}
               onUploaded={(images) => dispatch({ type: "addToTray", images })}
             />
             <div className="mt-2 flex items-center justify-between gap-2">
