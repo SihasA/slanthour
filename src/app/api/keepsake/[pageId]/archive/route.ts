@@ -21,6 +21,7 @@ import { ZipWriter } from "@/lib/keepsake/zip";
 import { displaySettings, parseDocument, type PublishedSnapshot } from "@/lib/page-document";
 import { imageUrl } from "@/lib/media";
 import { resolveThemeTokens } from "@/themes/registry";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +70,17 @@ export async function GET(request: Request, { params }: RouteProps) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Sign in to download this archive." }, { status: 401 });
+  }
+
+  // Each export self-fetches an SSR render, compiles Tailwind against it, and
+  // fetches every image — real CPU and bandwidth, so throttle per owner like
+  // the upload routes do. Keyed on the authenticated user id, not an IP.
+  const limited = rateLimit("keepsake-archive", user.id, 10, 60);
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: "Too many downloads. Wait a minute and try again." },
+      { status: 429 }
+    );
   }
 
   // RLS also permits reading anyone's published-public page (needed
@@ -133,6 +145,28 @@ export async function GET(request: Request, { params }: RouteProps) {
   });
   const readme = readmeText({ title: snapshot.title, publishedAt: snapshot.publishedAt });
 
+  // Only two hosts are ever legitimate image sources: our own origin
+  // (root-relative legacy/demo paths) and the Supabase storage host
+  // (everything uploaded through the pipeline). Image `path` is stored
+  // verbatim from the client document, so an owner could set it to an
+  // internal URL (cloud metadata, localhost); fetching that here and
+  // streaming the bytes back would be an SSRF read primitive. Allowlist
+  // the two known hosts and skip anything else.
+  const selfOrigin = new URL(request.url).origin;
+  const storageHost = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).host;
+    } catch {
+      return null;
+    }
+  })();
+  function isAllowedImageUrl(src: URL): boolean {
+    if (src.origin === selfOrigin) return true;
+    return storageHost !== null && src.protocol === "https:" && src.host === storageHost;
+  }
+
+  const skipped: string[] = [];
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const writer = new ZipWriter();
@@ -154,23 +188,39 @@ export async function GET(request: Request, { params }: RouteProps) {
               // Legacy/demo images carry root-relative paths; resolve them
               // against this request's origin so they fetch from our own
               // public assets instead of throwing on a relative URL.
-              const src = new URL(
-                imageUrl(entry.image, "lg", watermarkOn),
-                new URL(request.url).origin
-              );
-              const res = await fetch(src);
+              const src = new URL(imageUrl(entry.image, "lg", watermarkOn), selfOrigin);
+              if (!isAllowedImageUrl(src)) {
+                skipped.push(entry.localPath);
+                continue;
+              }
+              const res = await fetch(src, { redirect: "error" });
               if (res.ok) {
                 const bytes = new Uint8Array(await res.arrayBuffer());
                 controller.enqueue(writer.addFile(entry.localPath, bytes));
+              } else {
+                skipped.push(entry.localPath);
               }
             } catch {
               // Best effort: one unreachable photo shouldn't sink the export.
+              skipped.push(entry.localPath);
             }
           }
         }
         await Promise.all(
           Array.from({ length: Math.min(IMAGE_FETCH_CONCURRENCY, images.length) }, worker)
         );
+
+        // A silent gap would leave the paid archive with broken image refs
+        // and no signal. Record any photo we couldn't include so the owner
+        // (and support) can see the export was partial.
+        if (skipped.length > 0) {
+          const notice =
+            `${skipped.length} of ${images.length} photographs could not be included ` +
+            `in this archive:\n\n${skipped.join("\n")}\n\n` +
+            `Open the page in the editor and re-download to try again. If it ` +
+            `keeps happening, contact slanthour.com.\n`;
+          controller.enqueue(writer.addFile("MISSING-PHOTOS.txt", new TextEncoder().encode(notice)));
+        }
 
         controller.enqueue(writer.addFile("README.txt", new TextEncoder().encode(readme)));
         controller.enqueue(writer.finish());

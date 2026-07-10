@@ -17,6 +17,7 @@ import { hashPagePassword, verifyPagePassword } from "@/lib/page-password";
 import { grantGalleryAccess } from "@/lib/proofing-gate";
 import { newProofingSlug, proofingLimitLabel, PROOFING_TITLE_MAX_LENGTH } from "@/lib/proofing";
 import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 import { validatePagePassword } from "@/lib/validation";
 import type { ProofingGallery, ProofingStatus } from "@/types";
 
@@ -251,7 +252,7 @@ export async function unlockGallery(slug: string, password: string): Promise<Act
   }
 
   const headerStore = await headers();
-  const ip = (headerStore.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(headerStore);
   const limited = rateLimit("proofing-unlock", `${ip}:${slug}`, 10, 60);
   if (!limited.allowed) return err("Too many attempts. Wait a minute and try again.");
 

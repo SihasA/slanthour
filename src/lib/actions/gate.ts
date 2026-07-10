@@ -10,6 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyPagePassword } from "@/lib/page-password";
 import { grantPageAccess } from "@/lib/page-gate";
 import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 
 export interface UnlockResult {
   ok: boolean;
@@ -22,7 +23,7 @@ export async function unlockPage(pageId: string, password: string): Promise<Unlo
   }
 
   const headerStore = await headers();
-  const ip = (headerStore.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(headerStore);
   const limited = rateLimit("page-unlock", `${ip}:${pageId}`, 10, 60);
   if (!limited.allowed) {
     return { ok: false, error: "Too many attempts. Wait a minute and try again." };

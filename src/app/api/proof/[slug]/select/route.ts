@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasGalleryAccess } from "@/lib/proofing-gate";
 import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,7 @@ export async function POST(
   const { slug } = await params;
 
   const headerStore = await headers();
-  const ip = (headerStore.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(headerStore);
   const limited = rateLimit("proofing-select", `${ip}:${slug}`, 240, 60);
   if (!limited.allowed) {
     return NextResponse.json(
