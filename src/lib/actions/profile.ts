@@ -2,9 +2,10 @@
 
 // ─── Profile mutations ───────────────────────────────────────────────
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { validateUsername } from "@/lib/validation";
+import { pageCacheTag } from "@/lib/page-cache";
 import type { ActionResult } from "./pages";
 
 const DISPLAY_NAME_MAX = 60;
@@ -52,7 +53,23 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
 
   revalidatePath("/dashboard");
   revalidatePath(`/${current.username}`);
-  if (updates.username) revalidatePath(`/${username}`);
+
+  if (updates.username) {
+    revalidatePath(`/${username}`);
+    // Every one of this user's page URLs moves with the username, so each
+    // page's cache entry must be invalidated at both its old and new
+    // address — a single revalidatePath("/[username]") does not reach the
+    // per-page tag on /[username]/[slug].
+    const { data: pages } = await supabase.from("pages").select("slug").eq("user_id", user.id);
+    for (const row of pages ?? []) {
+      const slug = row.slug as string;
+      revalidateTag(pageCacheTag(current.username, slug));
+      revalidateTag(pageCacheTag(username, slug));
+      revalidatePath(`/${current.username}/${slug}`);
+      revalidatePath(`/${username}/${slug}`);
+    }
+  }
+
   return { ok: true };
 }
 
