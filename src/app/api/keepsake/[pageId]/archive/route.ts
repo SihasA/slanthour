@@ -151,7 +151,14 @@ export async function GET(request: Request, { params }: RouteProps) {
             const entry = images[cursor];
             cursor += 1;
             try {
-              const res = await fetch(imageUrl(entry.image, "lg", watermarkOn));
+              // Legacy/demo images carry root-relative paths; resolve them
+              // against this request's origin so they fetch from our own
+              // public assets instead of throwing on a relative URL.
+              const src = new URL(
+                imageUrl(entry.image, "lg", watermarkOn),
+                new URL(request.url).origin
+              );
+              const res = await fetch(src);
               if (res.ok) {
                 const bytes = new Uint8Array(await res.arrayBuffer());
                 controller.enqueue(writer.addFile(entry.localPath, bytes));

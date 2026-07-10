@@ -45,6 +45,16 @@ describe("localizeHtml", () => {
     expect(out).toContain('alt="x"');
   });
 
+  it("strips mixed-case srcSet attributes too", () => {
+    // At least one theme path emits a verbatim srcSet attribute in server
+    // HTML rather than React's lowercased srcset; caught in runtime QA.
+    const image = img();
+    const html = `<img src="${imageUrl(image, "lg")}" srcSet="a 1w, b 2w" alt="x">`;
+    const out = localizeHtml(html, [entry(image)]);
+    expect(out).not.toMatch(/srcset="/i);
+    expect(out).toContain('alt="x"');
+  });
+
   it("collapses the watermarked variant when the image has one", () => {
     const image = img({ hasWatermark: true });
     const html = `<img src="${imageUrl(image, "lg", true)}">`;

@@ -35,7 +35,9 @@ export function localizeHtml(html: string, images: ArchiveImageEntry[]): string 
       out = out.split(url).join(entry.localPath);
     }
   }
-  out = out.replace(/ srcset="[^"]*"/g, "").replace(/ sizes="[^"]*"/g, "");
+  // Case-insensitive: React emits lowercase srcset, but at least one theme
+  // path emits a verbatim srcSet attribute in the server HTML.
+  out = out.replace(/ srcset="[^"]*"/gi, "").replace(/ sizes="[^"]*"/gi, "");
   return out;
 }
 
