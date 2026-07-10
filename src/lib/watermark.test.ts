@@ -27,4 +27,13 @@ describe("resolveWatermarkLabel", () => {
     expect(resolveWatermarkLabel(long, "janedoe")).toHaveLength(40);
     expect(resolveWatermarkLabel("", "u".repeat(80))).toHaveLength(40);
   });
+
+  it("clamps by code point so an emoji is never split into a lone surrogate", () => {
+    // 39 ASCII + an astral emoji: a UTF-16 slice(0,40) would cut mid-emoji
+    // and leave a lone high surrogate. Code-point clamping keeps 40 whole
+    // characters (the emoji dropped), so no orphaned surrogate remains.
+    const label = resolveWatermarkLabel("A".repeat(39) + "\u{1F600}tail", null);
+    expect([...label]).toHaveLength(40);
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(label)).toBe(false);
+  });
 });

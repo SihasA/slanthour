@@ -8,10 +8,37 @@
 // No provider is integrated yet (see MONETIZATION_PLAN.md §2); these are
 // exercised by the webhook when one lands, and by admin tooling until then.
 
+import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { pageCacheTag } from "@/lib/page-cache";
 import type { Tier } from "@/types";
 
 export type EffectResult = { ok: true } | { ok: false; error: string };
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+/**
+ * The published-page cache freezes the badge decision (tier + grants) for up
+ * to an hour, so a tier or grant change must invalidate the affected pages or
+ * a paid badge-removal / a refund revocation lingers. Wrapped defensively:
+ * revalidateTag only works inside a request, and these effects may also run
+ * from admin tooling outside one.
+ */
+async function revalidateUserPages(admin: AdminClient, userId: string): Promise<void> {
+  const { data } = await admin
+    .from("pages")
+    .select("slug, profiles!inner(username)")
+    .eq("user_id", userId)
+    .eq("is_published", true);
+  for (const row of data ?? []) {
+    const username = (row.profiles as unknown as { username: string }).username;
+    try {
+      revalidateTag(pageCacheTag(username, row.slug as string));
+    } catch {
+      // Not in a request context (admin script); the 1h revalidate covers it.
+    }
+  }
+}
 
 /**
  * Record a provider event before applying its effect. Returns
@@ -48,7 +75,9 @@ export async function setTier(
     .from("profiles")
     .update({ tier, tier_expires_at: currentPeriodEnd.toISOString() })
     .eq("id", userId);
-  return error ? { ok: false, error: error.message } : { ok: true };
+  if (error) return { ok: false, error: error.message };
+  await revalidateUserPages(admin, userId);
+  return { ok: true };
 }
 
 /**
@@ -62,7 +91,9 @@ export async function clearTier(userId: string): Promise<EffectResult> {
     .from("profiles")
     .update({ tier: "free", tier_expires_at: null })
     .eq("id", userId);
-  return error ? { ok: false, error: error.message } : { ok: true };
+  if (error) return { ok: false, error: error.message };
+  await revalidateUserPages(admin, userId);
+  return { ok: true };
 }
 
 /** Keepsake purchase: attach a 10-year publication guarantee to one page. */
@@ -98,5 +129,9 @@ export async function grantPermanentPage(
     },
     { onConflict: "page_id" }
   );
-  return error ? { ok: false, error: error.message } : { ok: true };
+  if (error) return { ok: false, error: error.message };
+  // A grant drops the "Made with Slanthour" badge on this page — invalidate
+  // so the buyer sees it gone without waiting out the cache window.
+  await revalidateUserPages(admin, userId);
+  return { ok: true };
 }

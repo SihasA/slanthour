@@ -61,6 +61,10 @@ export function SmartImage({
   useEffect(() => {
     const node = imgEl.current;
     if (!node) return;
+    // Reset first: when the same instance is reused for a different photo
+    // (editor reorder/swap within a row reuses this node), a stale
+    // loaded=true would skip the blur-up and fade and flash the old state.
+    setLoaded(false);
     if (node.complete && node.naturalWidth > 0) {
       setLoaded(true);
       return;

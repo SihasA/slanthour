@@ -11,5 +11,8 @@ export function resolveWatermarkLabel(
 ): string {
   const name = (displayName ?? "").trim();
   const label = name || (username ? `@${username}` : "");
-  return label.slice(0, MEDIA_WATERMARK.maxChars);
+  // Clamp by code point, not UTF-16 unit: a plain slice can cut through an
+  // astral character (emoji, rare scripts) and leave a lone surrogate that
+  // renders as a tofu box in the canvas watermark.
+  return Array.from(label).slice(0, MEDIA_WATERMARK.maxChars).join("");
 }

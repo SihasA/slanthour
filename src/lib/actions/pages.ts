@@ -185,6 +185,9 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ page
     return err("Page limit reached. Delete a page before duplicating.");
 
   // Fresh section/image ids; assetIds intentionally shared (same underlying files).
+  // Carry the display settings (watermark, photo protection, resolution cap):
+  // dropping them would silently downgrade a duplicated protected client page
+  // to full-resolution, unwatermarked, unprotected on its next publish.
   const doc = parseDocument(page.draft);
   const cloned: PageDocument = {
     version: doc.version,
@@ -193,6 +196,7 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ page
       const images = sectionImages(withNewId).map((img) => ({ ...img, id: newSectionId() }));
       return withSectionImages(withNewId, images);
     }),
+    ...(doc.settings ? { settings: doc.settings } : {}),
   };
 
   const slug = await uniqueSlugFor(supabase, user.id, `${page.slug.slice(0, 50)}-copy`);
