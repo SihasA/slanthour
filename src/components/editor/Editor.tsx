@@ -54,35 +54,52 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
   const revRef = useRef(page.draft_rev);
   const contentRef = useRef<EditorContent>(state.content);
   contentRef.current = state.content;
-  const savingRef = useRef(false);
+  const inFlightRef = useRef<Promise<boolean> | null>(null);
   const saveStateRef = useRef<SaveState>("saved");
   saveStateRef.current = saveState;
 
-  const saveNow = useCallback(async (): Promise<boolean> => {
-    if (savingRef.current) return false;
-    savingRef.current = true;
-    setSaveState("saving");
-    const content = contentRef.current;
-    const result = await savePageDraft(
-      page.id,
-      {
-        document: content.document,
-        title: content.title,
-        theme: content.theme,
-        themeSettings: content.themeSettings,
-      },
-      revRef.current
-    );
-    savingRef.current = false;
-    if (result.ok) {
+  // Drains the latest content to the server, re-saving on top of the new
+  // revision if content changed mid-flight, until the persisted content
+  // matches what's in memory.
+  const runSave = useCallback(async (): Promise<boolean> => {
+    for (;;) {
+      const content = contentRef.current;
+      setSaveState("saving");
+      const result = await savePageDraft(
+        page.id,
+        {
+          document: content.document,
+          title: content.title,
+          theme: content.theme,
+          themeSettings: content.themeSettings,
+        },
+        revRef.current
+      );
+      if (!result.ok) {
+        setSaveState(result.conflict ? "conflict" : "error");
+        return false;
+      }
       revRef.current = result.rev;
-      // Content may have changed while saving — stay dirty in that case.
-      setSaveState(contentRef.current === content ? "saved" : "dirty");
-      return true;
+      if (contentRef.current === content) {
+        setSaveState("saved");
+        return true;
+      }
+      // Content changed while this save was in flight — loop and save the
+      // latest content on top of the new revision.
     }
-    setSaveState(result.conflict ? "conflict" : "error");
-    return false;
   }, [page.id]);
+
+  // Coalesces concurrent callers onto the same in-flight save so a publish
+  // racing an autosave awaits a truthful result instead of a spurious
+  // "already saving" failure.
+  const saveNow = useCallback((): Promise<boolean> => {
+    if (inFlightRef.current) return inFlightRef.current;
+    const p = runSave().finally(() => {
+      inFlightRef.current = null;
+    });
+    inFlightRef.current = p;
+    return p;
+  }, [runSave]);
 
   // Debounced autosave whenever content changes.
   const firstRender = useRef(true);
