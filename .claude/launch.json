@@ -2,11 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "next-dev",
+      "name": "slanthour-dev-server",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000,
-      "autoPort": true
+      "port": 3000
+    },
+    {
+      "name": "slanthour-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "port": 3000
     }
   ]
 }

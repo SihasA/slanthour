@@ -19,6 +19,8 @@ export interface PageImage {
   hasVariants?: boolean;
   /** True when a 2560px xl variant also exists (hi-fi uploads, Pro+). */
   hasXl?: boolean;
+  /** True when {lg,md,sm,xl}.wm.jpg siblings exist. */
+  hasWatermark?: boolean;
   width: number | null;
   height: number | null;
   alt: string;
@@ -137,11 +139,14 @@ export interface PageDisplaySettings {
   protectPhotos: boolean;
   /** Largest variant served to visitors: "md" caps files at 1000px. */
   maxPhotoRes: "full" | "md";
+  /** Serve name-stamped variants on the published page. */
+  watermark: boolean;
 }
 
 export const DEFAULT_DISPLAY_SETTINGS: PageDisplaySettings = {
   protectPhotos: false,
   maxPhotoRes: "full",
+  watermark: false,
 };
 
 export interface PageDocument {
@@ -305,6 +310,7 @@ function sanitizeImage(v: unknown): PageImage | null {
     path: v.path,
     hasVariants: v.hasVariants === true,
     hasXl: v.hasXl === true,
+    hasWatermark: v.hasWatermark === true,
     width: typeof v.width === "number" ? v.width : null,
     height: typeof v.height === "number" ? v.height : null,
     alt: typeof v.alt === "string" ? v.alt : "",
@@ -390,8 +396,10 @@ export function sanitizeDisplaySettings(v: unknown): PageDisplaySettings | undef
   const settings: PageDisplaySettings = {
     protectPhotos: v.protectPhotos === true,
     maxPhotoRes: oneOf(v.maxPhotoRes, ["full", "md"] as const, "full"),
+    watermark: v.watermark === true,
   };
-  const isDefault = !settings.protectPhotos && settings.maxPhotoRes === "full";
+  const isDefault =
+    !settings.protectPhotos && settings.maxPhotoRes === "full" && !settings.watermark;
   return isDefault ? undefined : settings;
 }
 

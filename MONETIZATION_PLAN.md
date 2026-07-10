@@ -35,7 +35,7 @@ finance note; the summary is in §5.
 | Custom domain (phase 4) | — | — | 1 domain | 5 domains |
 | Proofing galleries (§3.7, coming) | — | — | 3 active | Unlimited |
 | Hi-fi client downloads (§3.8, coming) | — | — | — | ✓ |
-| Watermarking (§3.9, coming) | ✓ | ✓ | ✓ | ✓ |
+| Watermarking (§3.9) | ✓ | ✓ | ✓ | ✓ |
 | Sub-account seats | — | — | — | Later |
 
 **Keepsake page — $39 one-time, per page.** Stays published as long as
@@ -118,11 +118,17 @@ Vercel Domains API + `domains` table + middleware host rewrite. Still the
 most-cited reason photographers pay; sequenced after proofing because proofing
 is what makes the paid ladder coherent.
 
-### 3.5 Keepsake permanent pages — model shipped, purchase flow phase 2
+### 3.5 Keepsake permanent pages — model + static archive shipped, purchase flow phase 2
 `permanent_grants` table live; a granted page is exempt from page limits,
-carries no badge, and only the owner can unpublish it. Static archive download
-ships with the purchase flow (it is the credibility half of the product): a
-self-contained zip of the published snapshot. Terms provision live (§6).
+carries no badge, and only the owner can unpublish it. Static archive export
+is live end to end (built 10 Jul, §8): the dashboard offers "Download
+archive" on any granted, published page, streaming a self-contained zip from
+a route handler — real PageRenderer output, Tailwind compiled against that
+exact markup, images localized to files, reveal animations neutralized for
+no-JS viewing. Grants themselves are still only created by the billing
+effects lib (`src/lib/billing/effects.ts`), so the download exists end to
+end but nobody can buy their way to one until checkout ships (Phase 2, §4).
+Terms provision live (§6).
 
 ### 3.6 Keep-originals add-on — **dropped**
 Cut by the not-an-archive principle (8 Jul). The need it served is now met by
@@ -151,11 +157,14 @@ A showcase page's owner can enable client download of the xl variants (zip or
 per-photo). This is the delivery story: high fidelity in resolution,
 aggressively optimized in bytes, and described exactly that way in the UI.
 
-### 3.9 Watermarking (all tiers) — phase 3, with proofing
-Opt-in per page or per upload. Preferred implementation: generate watermarked
-*and* clean variants at upload and toggle at render time; storage roughly
-doubles per photo (0.55MB → 1.1MB) which is still negligible, and turning a
-watermark off never requires a re-upload. Decide final UX at build time.
+### 3.9 Watermarking (all tiers) — phase 3, with proofing — shipped 10 Jul
+Built as planned: dual variants at upload (clean + name-stamped), a per-page
+toggle decides which one visitors get, and turning it off never requires a
+re-upload. Final UX decisions: a single bottom-right corner wordmark (owner's
+`display_name`, falling back to `@username`) rather than diagonal tiling —
+crop-resistant protection is already proofing's job, and a corner mark reads
+premium instead of like stock-photo watermarking. New uploads only; storage
+roughly doubles per photo (0.55MB → 1.1MB), as pre-accepted here.
 
 ## 4. Phasing
 
@@ -218,8 +227,16 @@ Shipped and provider-independent:
       checkout + webhook (reduces to the effects lib).
 - [x] Proofing galleries (§3.7) — built 9 Jul (dashboard + client gallery + select-list
   export). Migration `20260709000000_proofing.sql` awaits review before touching prod.
-- [ ] Watermarking (§3.9) — still open; ships next.
-- [ ] Static archive export (§3.5) — ships with the Keepsake purchase flow.
+- [x] Watermarking (§3.9) — built 10 Jul: dual `{lg,md,sm,xl}.wm.jpg` variants generated
+  client-side at upload (all tiers, new uploads only), corner wordmark of the owner's name,
+  per-page toggle frozen into the published snapshot like other display settings. Migration
+  `20260710000000_media_watermark.sql` awaits review before touching prod.
+- [x] Static archive export (§3.5) — built 10 Jul: owner-only, grant-gated route
+  handler (`/api/keepsake/[pageId]/archive`) streams a zip of the real PageRenderer
+  output (Tailwind compiled at export time against that exact HTML, images
+  localized to files, reveal animations neutralized for no-JS viewing). No new
+  dependency (hand-rolled store-only zip writer), no migration. Still waits on
+  the purchase flow (Phase 2) — grants aren't purchasable yet.
 - [ ] Cloudflare free CDN in front of site + storage (pre-launch, see §5).
 - [ ] Local tax advice on foreign income (non-blocking).
 - [ ] Landing copy rewrite when billing opens.

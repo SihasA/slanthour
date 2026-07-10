@@ -190,12 +190,12 @@ describe("display settings", () => {
       sections: [],
       settings: { protectPhotos: true, maxPhotoRes: "huge" },
     });
-    expect(doc.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full" });
+    expect(doc.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full", watermark: false });
   });
 
   it("keeps a non-default serving cap", () => {
     const doc = parseDocument({ version: 1, sections: [], settings: { maxPhotoRes: "md" } });
-    expect(doc.settings).toEqual({ protectPhotos: false, maxPhotoRes: "md" });
+    expect(doc.settings).toEqual({ protectPhotos: false, maxPhotoRes: "md", watermark: false });
   });
 
   it("collapses all-default settings to absent", () => {
@@ -212,7 +212,44 @@ describe("display settings", () => {
     expect(displaySettings(createEmptyDocument())).toEqual({
       protectPhotos: false,
       maxPhotoRes: "full",
+      watermark: false,
     });
+  });
+
+  it("keeps a non-default watermark setting", () => {
+    const doc = parseDocument({ version: 1, sections: [], settings: { watermark: true } });
+    expect(doc.settings).toEqual({ protectPhotos: false, maxPhotoRes: "full", watermark: true });
+  });
+
+  it("collapses all-default settings (including watermark) to absent", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [],
+      settings: { protectPhotos: false, maxPhotoRes: "full", watermark: false },
+    });
+    expect(doc.settings).toBeUndefined();
+  });
+});
+
+describe("image watermark flag", () => {
+  it("carries hasWatermark through when true", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [{ id: "s", type: "image", image: { ...img(), hasWatermark: true } }],
+    });
+    const section = doc.sections[0];
+    if (section.type !== "image") throw new Error("expected image section");
+    expect(section.image?.hasWatermark).toBe(true);
+  });
+
+  it("defaults hasWatermark to false when absent", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [{ id: "s", type: "image", image: img() }],
+    });
+    const section = doc.sections[0];
+    if (section.type !== "image") throw new Error("expected image section");
+    expect(section.image?.hasWatermark).toBe(false);
   });
 });
 

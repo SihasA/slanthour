@@ -8,8 +8,9 @@
 //   4. sanitises input before persisting.
 // Actions return { ok } results instead of throwing across the boundary.
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { pageCacheTag } from "@/lib/page-cache";
 import {
   collectAssetIds,
   countImages,
@@ -84,6 +85,10 @@ function revalidatePublic(username: string | null, slug: string) {
   if (username) {
     revalidatePath(`/${username}`);
     revalidatePath(`/${username}/${slug}`);
+    // Drops both the Data Cache entry and the Full Route Cache for this
+    // page's URL. Callers that also pass the *old* slug/username (see
+    // updatePageSettings on a slug change) invalidate both addresses.
+    revalidateTag(pageCacheTag(username, slug));
   }
 }
 
