@@ -60,6 +60,34 @@ export interface PermanentGrant {
   guaranteed_until: string;
 }
 
+export type ProofingStatus = "active" | "archived";
+
+export interface ProofingGallery {
+  id: string;
+  user_id: string;
+  title: string;
+  /** Unguessable share token; the /proof/{slug} link. */
+  slug: string;
+  password_hash: string | null;
+  status: ProofingStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProofingImage {
+  id: string;
+  gallery_id: string;
+  user_id: string;
+  /** Path of the md variant; sm.jpg sits alongside. Never lg/xl. */
+  storage_path: string;
+  /** The client's original filename — the Lightroom deliverable. */
+  filename: string;
+  width: number | null;
+  height: number | null;
+  position: number;
+  created_at: string;
+}
+
 export interface MediaAsset {
   id: string;
   user_id: string;
@@ -67,6 +95,8 @@ export interface MediaAsset {
   has_variants: boolean;
   /** A 2560px xl.jpg exists alongside lg/md/sm (hi-fi uploads, Pro+). */
   has_xl: boolean;
+  /** {lg,md,sm,xl}.wm.jpg siblings exist (name-stamped, all tiers). */
+  has_watermark: boolean;
   filename: string;
   width: number | null;
   height: number | null;

@@ -50,13 +50,26 @@ export async function DELETE(
     }
   }
 
-  // Remove all stored files for the asset (variants or the legacy single file).
+  // Remove all stored files for the asset (variants or the legacy single
+  // file), including watermarked siblings when they exist.
   const paths = asset.has_variants
-    ? ["lg.jpg", "md.jpg", "sm.jpg", ...(asset.has_xl ? ["xl.jpg"] : [])].map((v) =>
-        (asset.storage_path as string).replace(/lg\.jpg$/, v)
-      )
+    ? [
+        "lg.jpg",
+        "md.jpg",
+        "sm.jpg",
+        ...(asset.has_xl ? ["xl.jpg"] : []),
+        ...(asset.has_watermark
+          ? ["lg.wm.jpg", "md.wm.jpg", "sm.wm.jpg", ...(asset.has_xl ? ["xl.wm.jpg"] : [])]
+          : []),
+      ].map((v) => (asset.storage_path as string).replace(/lg\.jpg$/, v))
     : [asset.storage_path as string];
-  await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+  const { error: storageError } = await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+  // Stop before deleting the row if the files couldn't be removed: keeping
+  // the row means the owner can retry, whereas dropping it now would orphan
+  // the objects with no reference left to clean them up.
+  if (storageError) {
+    return NextResponse.json({ error: "Could not delete the image." }, { status: 500 });
+  }
 
   const { error } = await supabase
     .from("media_assets")

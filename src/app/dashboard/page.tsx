@@ -42,6 +42,16 @@ export default async function DashboardPage() {
     }
   }
 
+  // Keepsake (permanent-grant) pages get a "Download archive" action.
+  const keepsakePageIds = new Set<string>();
+  if ((pages ?? []).length > 0) {
+    const { data: grants } = await supabase
+      .from("permanent_grants")
+      .select("page_id")
+      .in("page_id", (pages ?? []).map((p) => p.id));
+    for (const grant of grants ?? []) keepsakePageIds.add(grant.page_id);
+  }
+
   if (error) {
     return (
       <div className="px-6 py-16 max-w-3xl">
@@ -103,6 +113,7 @@ export default async function DashboardPage() {
                 page={page}
                 username={username}
                 views={analytics ? (viewsByPage.get(page.id) ?? 0) : null}
+                keepsake={keepsakePageIds.has(page.id)}
               />
             ))}
           </ul>

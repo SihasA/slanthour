@@ -33,23 +33,36 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
+  // Keyset cursor over the full sort key (created_at, id). Keying on
+  // created_at alone drops rows once more than a page share one timestamp
+  // (bulk backfills and concurrent multi-select uploads make that real):
+  // the next page's `created_at <` excludes the whole timestamp group, not
+  // just the rows already returned. Encode both parts as "created_at|id".
   const cursor = new URL(request.url).searchParams.get("cursor");
+  const [cursorCreatedAt, cursorId] = cursor ? cursor.split("|") : [];
 
   let query = supabase
     .from("media_assets")
-    .select("id, storage_path, has_variants, has_xl, filename, width, height, blur_data_url, created_at")
+    .select(
+      "id, storage_path, has_variants, has_xl, has_watermark, filename, width, height, blur_data_url, created_at"
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(LIBRARY_PAGE_SIZE);
-  if (cursor) query = query.lt("created_at", cursor);
+  if (cursorCreatedAt && cursorId) {
+    query = query.or(
+      `created_at.lt.${cursorCreatedAt},and(created_at.eq.${cursorCreatedAt},id.lt.${cursorId})`
+    );
+  }
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: "Could not load your library." }, { status: 500 });
 
   const assets = data ?? [];
+  const last = assets[assets.length - 1];
   const nextCursor =
-    assets.length === LIBRARY_PAGE_SIZE ? assets[assets.length - 1].created_at : null;
+    assets.length === LIBRARY_PAGE_SIZE && last ? `${last.created_at}|${last.id}` : null;
   return NextResponse.json({ assets, nextCursor });
 }
 
@@ -107,6 +120,43 @@ export async function POST(request: Request) {
     }
   }
 
+  // Optional watermarked siblings — available to every tier (§3.9), unlike
+  // xl, so no entitlement check here. Accepted only as a complete lg/md/sm
+  // set; an incomplete or invalid set is dropped silently, the same
+  // stale-client tolerance as xl. wm_xl is accepted only when the clean xl
+  // itself was accepted, so a watermarked hi-fi variant never outlives its
+  // clean counterpart.
+  const wmBytes: Partial<Record<(typeof VARIANT_KEYS)[number], Uint8Array>> & { xl?: Uint8Array } = {};
+  const wmLgBlob = form.get("wm_lg");
+  const wmMdBlob = form.get("wm_md");
+  const wmSmBlob = form.get("wm_sm");
+  if (wmLgBlob instanceof Blob && wmMdBlob instanceof Blob && wmSmBlob instanceof Blob) {
+    const candidates: Partial<Record<(typeof VARIANT_KEYS)[number], Uint8Array>> = {};
+    let allOk = true;
+    for (const [key, blob] of [
+      ["lg", wmLgBlob],
+      ["md", wmMdBlob],
+      ["sm", wmSmBlob],
+    ] as const) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const check = checkUploadedImage(bytes);
+      if (!check.ok) {
+        allOk = false;
+        break;
+      }
+      candidates[key] = bytes;
+    }
+    if (allOk) {
+      Object.assign(wmBytes, candidates);
+      const wmXlBlob = form.get("wm_xl");
+      if (xlBytes && wmXlBlob instanceof Blob) {
+        const bytes = new Uint8Array(await wmXlBlob.arrayBuffer());
+        const check = checkUploadedImage(bytes);
+        if (check.ok) wmBytes.xl = bytes;
+      }
+    }
+  }
+
   const dims = checkDimensions(form.get("width"), form.get("height"));
   if (!dims) return NextResponse.json({ error: "Invalid image dimensions." }, { status: 400 });
   const blur = checkBlurDataUrl(form.get("blur"));
@@ -120,6 +170,10 @@ export async function POST(request: Request) {
     (key) => [key, variants[key]!]
   );
   if (xlBytes) toWrite.push(["xl", xlBytes]);
+  if (wmBytes.lg) toWrite.push(["lg.wm", wmBytes.lg]);
+  if (wmBytes.md) toWrite.push(["md.wm", wmBytes.md]);
+  if (wmBytes.sm) toWrite.push(["sm.wm", wmBytes.sm]);
+  if (wmBytes.xl) toWrite.push(["xl.wm", wmBytes.xl]);
 
   for (const [key, bytes] of toWrite) {
     const path = `${dir}/${key}.jpg`;
@@ -142,6 +196,7 @@ export async function POST(request: Request) {
       storage_path: `${dir}/lg.jpg`,
       has_variants: true,
       has_xl: xlBytes !== null,
+      has_watermark: wmBytes.lg !== undefined,
       filename,
       width: dims.width,
       height: dims.height,

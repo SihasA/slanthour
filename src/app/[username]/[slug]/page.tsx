@@ -3,23 +3,31 @@
 // password-protected pages are not anonymously readable through RLS, so
 // the lookup uses the service-role client and visibility is enforced here
 // in code (the metadata for protected pages leaks nothing).
+//
+// The Supabase read (plus the badge lookup) is cached per page via
+// unstable_cache, tagged with pageCacheTag(username, slug); a cache hit
+// makes zero Supabase calls. Every mutation that can change or move a
+// live page invalidates that tag (see src/lib/actions/pages.ts and
+// src/lib/actions/profile.ts), so a republish is never served stale. The
+// password path still renders dynamically (it reads a per-request gate
+// cookie) but reads the same cached snapshot. View recording happens
+// client-side via ViewBeacon, not here — this route has no side effects.
 
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { after } from "next/server";
+import { unstable_cache } from "next/cache";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPageAccess } from "@/lib/page-gate";
-import { pageViewRecorder } from "@/lib/analytics";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { parseDocument, type PublishedSnapshot } from "@/lib/page-document";
 import { storageUrl } from "@/lib/media";
+import { pageCacheTag, PUBLISHED_PAGE_REVALIDATE } from "@/lib/page-cache";
 import { PageRenderer } from "@/themes/PageRenderer";
 import { PasswordGate } from "@/components/public/PasswordGate";
+import { ViewBeacon } from "@/components/public/ViewBeacon";
 import { getTheme, sanitizeThemeSettings } from "@/themes/registry";
 import type { Page, Profile } from "@/types";
-
-export const dynamic = "force-dynamic";
 
 type RouteProps = { params: Promise<{ username: string; slug: string }> };
 
@@ -29,28 +37,40 @@ type LoadedProfile = Pick<
 >;
 
 // One joined query (owner embedded via the user_id FK) instead of two
-// sequential round trips, and React-cached so generateMetadata and the page
-// body share a single fetch per request. The DB lives in eu-west-1; every
-// avoided round trip is real TTFB.
+// sequential round trips. Wrapped per-call in unstable_cache, tagged per
+// page and revalidated hourly as a safety net (explicit mutations
+// invalidate instantly via the tag — see the mutation table in
+// src/lib/actions/pages.ts / profile.ts); the key array carries
+// username/slug, so the Data Cache entry is correctly scoped even though
+// the wrapped function closes over them instead of taking them as args.
+// The outer React cache() dedupes across generateMetadata and the page
+// body within a single request. The DB lives in eu-west-1; every avoided
+// round trip is real TTFB — and a cache hit avoids it entirely.
 const loadPage = cache(async (username: string, slug: string) => {
-  const admin = createAdminClient();
-  const { data: page } = await admin
-    .from("pages")
-    .select(
-      "id, user_id, slug, title, visibility, is_published, published, cover_path, profiles!inner(id, username, display_name, tier, tier_expires_at)"
-    )
-    .eq("profiles.username", username)
-    .eq("slug", slug)
-    .single();
-  if (!page || !page.is_published || !page.published) return null;
+  return unstable_cache(
+    async () => {
+      const admin = createAdminClient();
+      const { data: page } = await admin
+        .from("pages")
+        .select(
+          "id, user_id, slug, title, visibility, is_published, published, profiles!inner(id, username, display_name, tier, tier_expires_at)"
+        )
+        .eq("profiles.username", username)
+        .eq("slug", slug)
+        .single();
+      if (!page || !page.is_published || !page.published) return null;
 
-  return {
-    profile: page.profiles as unknown as LoadedProfile,
-    page: page as unknown as Pick<
-      Page,
-      "id" | "user_id" | "slug" | "title" | "visibility" | "is_published" | "cover_path"
-    > & { published: PublishedSnapshot },
-  };
+      const profile = page.profiles as unknown as LoadedProfile;
+      const typedPage = page as unknown as Pick<
+        Page,
+        "id" | "user_id" | "slug" | "title" | "visibility" | "is_published"
+      > & { published: PublishedSnapshot };
+
+      return { profile, page: typedPage, badge: await showBadge(profile, typedPage.id) };
+    },
+    ["published-page", username, slug],
+    { tags: [pageCacheTag(username, slug)], revalidate: PUBLISHED_PAGE_REVALIDATE }
+  )();
 });
 
 /** Keepsake pages and paid tiers publish without the Slanthour badge. */
@@ -90,7 +110,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
       url: `https://slanthour.com/${profile.username}/${page.slug}`,
       siteName: "Slanthour",
       type: "article",
-      images: page.cover_path ? [{ url: storageUrl(page.cover_path) }] : undefined,
+      images: page.published.cover ? [{ url: storageUrl(page.published.cover) }] : undefined,
     },
   };
 }
@@ -99,21 +119,12 @@ export default async function PublishedPage({ params }: RouteProps) {
   const { username, slug } = await params;
   const loaded = await loadPage(username, slug);
   if (!loaded) notFound();
-  const { page, profile } = loaded;
+  const { page, profile, badge } = loaded;
 
   if (page.visibility === "password") {
     const unlocked = await hasPageAccess(page.id);
     if (!unlocked) return <PasswordGate pageId={page.id} />;
   }
-
-  // Badge lookup and view-recorder setup are independent — run them together.
-  // The view itself is counted once the response is on its way (after());
-  // bots, link-preview fetchers and the owner's own visits are excluded.
-  const [badge, recordView] = await Promise.all([
-    showBadge(profile, page.id),
-    pageViewRecorder(page.id, page.user_id),
-  ]);
-  if (recordView) after(recordView);
 
   const snapshot = page.published;
   const document = parseDocument(snapshot.document);
@@ -129,6 +140,8 @@ export default async function PublishedPage({ params }: RouteProps) {
           __html: `body { background: ${tokens.background} !important; color: ${tokens.text} !important; }`,
         }}
       />
+      {/* Only reached once any password gate has passed — a locked view never counts. */}
+      <ViewBeacon pageId={page.id} />
       <PageRenderer
         document={document}
         theme={snapshot.theme}

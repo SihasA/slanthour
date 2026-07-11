@@ -45,9 +45,15 @@ Authenticated:
 | `/dashboard` | The user's pages, with lifecycle actions |
 | `/pages/new` | Create a page → redirect into the editor |
 | `/editor/:pageId` | The section editor (sections · live preview · inspector) |
+| `/proofing`, `/proofing/:galleryId` | Proofing dashboard: gallery list + management (Pro/Studio) |
 | `/settings/profile`, `/settings/account` | Profile and account management |
 
-API route handlers: `/api/media` + `/api/media/:id` (upload / delete), `/api/auth/callback`
+Anonymous (shared privately, never indexed): `/proof/:slug` — a client proofing gallery
+(unguessable slug, optional password gate; see §10).
+
+API route handlers: `/api/media` + `/api/media/:id` (upload / delete),
+`/api/proofing/:galleryId/images` (owner proofing upload),
+`/api/proof/:slug/select` (anonymous pick toggle, gated), `/api/auth/callback`
 (OAuth). The `/arborAI` page and `/api/arbor/*` handlers belong to a **separate product**
 (Arbor) and are retained untouched — see §16.
 
@@ -130,6 +136,15 @@ the link, but not listed."
   conflict. A `beforeunload` guard protects unsaved edits.
 - **Live preview** uses the *same* `PageRenderer` as the published page, so what you design
   is exactly what publishes.
+- **Templates** (`src/lib/page-templates.ts`) — quick-start section skeletons, offered in two
+  places: the `/pages/new` picker (`createPage` takes an optional `templateId`, validated by
+  `isTemplateId`, unknown ids fall back to blank) and as cards in the empty-editor state
+  (`applyTemplate` reducer action appends the whole skeleton as **one undo step**). A template
+  is *not* a theme: it only creates sections, never touches theme or settings; cards show a
+  soft "pairs well with" hint. The structure line on each card is derived from `build()`
+  output so it cannot drift. Like theme ids, the template catalogue is **code-defined only**:
+  never mirror it into a DB constraint (see §6 on the retired `pages_theme_check`). Designed
+  to compose with the tray: template gives structure, "Fill sections in order" pours photos in.
 
 ---
 
@@ -215,6 +230,12 @@ magic-byte sniffing (not trusting the declared MIME type), dimension and size ch
 success it writes `{userId}/m/{assetId}/{lg,md,sm}.jpg` to storage and records a
 `media_assets` row; any failure rolls back. The endpoint is rate-limited.
 
+When the caller has a name to stamp, the same client-side canvas pass also produces
+watermarked `{lg,md,sm}.wm.jpg` siblings (§3.9): dual variants at upload, unconditionally, so
+toggling the page setting later never needs a re-upload. EXIF/GPS is already stripped by the
+canvas re-encode before the watermark is drawn, so the watermarked files carry no more
+metadata than the clean ones.
+
 `DELETE /api/media/:id` refuses if any **published** snapshot still references the asset, so a
 delete can never break a live page. `GET /api/media` returns the caller's library
 (metadata only, cursor-paginated 60 at a time) for the reuse picker; the same asset can be
@@ -259,6 +280,17 @@ Everything except the payment provider is built (see MONETIZATION_PLAN.md):
 - **Hi-fi uploads** — Pro+ uploads also produce `xl.jpg` (2560px, q0.85), generated
   client-side, tier-checked server-side, surfaced through `imageSrcSet` and the Lightbox.
   Never an upscale: sources ≤2000px skip it. `media_assets.has_xl` / `PageImage.hasXl`.
+- **Watermarking** (§3.9, all tiers, shipped 10 Jul) — a bottom-right corner wordmark
+  (`display_name`, falling back to `@username`) baked into the pixels client-side
+  (`src/lib/image.ts` `drawWatermark`), never a CSS/DOM overlay, so PhotoRow/split/row
+  layouts are untouched by construction. New uploads generate `{lg,md,sm,xl}.wm.jpg`
+  siblings unconditionally (dual-at-upload, mirroring hi-fi `xl`); a per-page toggle
+  (`PageDisplaySettings.watermark`, defaults off) decides whether visitors get the clean or
+  marked file, resolved through `imageUrl`/`imageSrcSet`'s `watermarked` flag. `PageRenderer`
+  is the single choke point that forces the toggle off outside `mode="published"`, so the
+  editor preview, demo page and landing showcase always render clean. New-uploads-only:
+  photos uploaded before this feature render clean on a watermarked page until re-uploaded.
+  `media_assets.has_watermark` / `PageImage.hasWatermark`.
 - **Analytics** — cookie-less daily aggregates (`page_view_daily`, `increment_page_view`
   RPC, service-role only), recorded via `next/server` `after()` on the published route with
   bot/link-preview UA filtering and owner-visit exclusion. Recorded for everyone; shown on
@@ -266,6 +298,40 @@ Everything except the payment provider is built (see MONETIZATION_PLAN.md):
 - **Keepsake pages** — `permanent_grants` rows (10-year `guaranteed_until`) exempt a page
   from `maxPages` and remove the badge; the T&C provision is live on /terms. Purchase flow
   arrives with the provider.
+- **Static archive export** (§3.5, built 10 Jul) — `src/lib/keepsake/*` + the route handler
+  at `/api/keepsake/[pageId]/archive` (owner-only, grant-gated, `page.published` only —
+  drafts never leak). The step-0 spike found that calling `renderToStaticMarkup` inside a
+  route handler is rejected by Next's build (a hard webpack guardrail on the App Router's
+  react-server condition, not a soft warning), so the HTML comes from Next's own SSR
+  instead: an owner-guarded internal page (`/keepsake-view/[pageId]`, reserved slug, gated
+  in middleware) renders the real `<PageRenderer/>` exactly like the live published route,
+  and the route handler self-fetches it (forwarding the caller's cookie) and extracts the
+  `.sh-page` subtree by counting balanced `<div>` tags (safe because React escapes user
+  text, so a caption can never forge a tag boundary). From there: Tailwind is compiled at
+  export time against that exact rendered HTML (`content: [{ raw, extension: "html" }]`,
+  zero drift), image URLs are localized to `images/<key>.jpg` (collected from whichever
+  variant/watermark state the render actually used, not assumed), and reveal/opacity
+  animations are force-un-hidden via CSS override since the archive has no JS to run them.
+  A hand-rolled store-only ZIP writer (`src/lib/keepsake/zip.ts`, no new dependency)
+  streams `index.html` + `assets/style.css` + each image + `README.txt` from the route
+  handler as bytes become ready, bounded to ~6 concurrent image fetches so memory never
+  holds a whole large archive at once. Surfaced as "Download archive" in the dashboard's
+  page menu, shown only when a page has both a grant and is published.
+- **Proofing galleries** (§3.7, built 9 Jul) — the client-selects-favourites workflow.
+  Three tables (`20260709000000_proofing.sql`): `proofing_galleries` (owner, title,
+  unguessable 20-char `slug`, optional `password_hash`, `status active|archived`),
+  `proofing_images` (md storage path + the client's ORIGINAL `filename` — the Lightroom
+  deliverable — plus batch `position`), `proofing_selections` (row-exists = picked; one
+  shared set per gallery, no client accounts). Entitlement `proofingGalleries` counts
+  ACTIVE galleries only (free/hobby 0, pro 3, studio unlimited); archiving closes the
+  `/proof` link and frees a slot, re-activating re-checks the limit. Images are md+sm
+  ONLY (~100KB/photo, generated client-side by `prepareProofingUpload`) — lg/xl never
+  exist for proofing, so previews stay small by construction. Gallery rows are not
+  anon-readable (enumeration defence, same posture as password pages): `/proof/:slug`
+  and the selection endpoint read via the service-role client with checks in code, and
+  a password gallery sets an HMAC gate cookie namespaced separately from the page gate
+  (`src/lib/proofing-gate.ts`). Owner mutations live in `src/lib/actions/proofing.ts`;
+  gallery deletion removes storage objects first (rows cascade).
 
 ---
 
@@ -321,7 +387,9 @@ consumed only by the Arbor product. Secrets live in `.env.local` (gitignored).
 ## 15. Storage layout
 
 ```
-{userId}/m/{assetId}/lg.jpg | md.jpg | sm.jpg   # platform uploads (variants)
+{userId}/m/{assetId}/lg.jpg | md.jpg | sm.jpg | xl.jpg       # platform uploads (variants)
+{userId}/m/{assetId}/lg.wm.jpg | md.wm.jpg | sm.wm.jpg | xl.wm.jpg # watermarked siblings
+{userId}/p/{galleryId}/{imageId}/md.jpg | sm.jpg # proofing previews (never lg/xl)
 {userId}/photos/...                             # legacy portfolio images (still referenced)
 {userId}/banner.jpg                             # legacy banner
 ```

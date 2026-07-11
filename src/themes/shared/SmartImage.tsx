@@ -43,6 +43,7 @@ export function SmartImage({
   const { open, enabled } = useLightbox();
   const display = usePageDisplay();
   const cap = servingCap(display);
+  const wm = display.watermark === true;
   const [loaded, setLoaded] = useState(false);
   const imgEl = useRef<HTMLImageElement | null>(null);
 
@@ -60,6 +61,10 @@ export function SmartImage({
   useEffect(() => {
     const node = imgEl.current;
     if (!node) return;
+    // Reset first: when the same instance is reused for a different photo
+    // (editor reorder/swap within a row reuses this node), a stale
+    // loaded=true would skip the blur-up and fade and flash the old state.
+    setLoaded(false);
     if (node.complete && node.naturalWidth > 0) {
       setLoaded(true);
       return;
@@ -85,8 +90,8 @@ export function SmartImage({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       ref={imgEl}
-      src={imageUrl(image, clampVariant("lg", cap))}
-      srcSet={imageSrcSet(image, cap)}
+      src={imageUrl(image, clampVariant("lg", cap), wm)}
+      srcSet={imageSrcSet(image, cap, wm)}
       sizes={sizes}
       alt={image.alt || image.caption || ""}
       width={image.width ?? undefined}

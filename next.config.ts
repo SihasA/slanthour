@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The Keepsake archive route compiles Tailwind at runtime against the
+  // rendered page HTML. Bundling tailwindcss into the route strips the
+  // css assets it reads from disk (preflight.css), so it must stay
+  // external and resolve from node_modules.
+  serverExternalPackages: ["tailwindcss", "postcss", "autoprefixer"],
   // Serve legacy static portfolio at /sihas-abeywickrama — a publicly
   // shared URL that predates the pages platform. Files live in
   // public/legacy/sihas-abeywickrama/.

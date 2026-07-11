@@ -24,12 +24,19 @@ export default async function AccountSettingsPage() {
 
   const hasPasswordAuth = (user.identities ?? []).some((i) => i.provider === "email");
 
-  const [{ data: profile }, { count: pageCount }] = await Promise.all([
+  const [{ data: profile }, { count: pageCount }, { count: grantCount }] = await Promise.all([
     supabase.from("profiles").select("tier, tier_expires_at").eq("id", user.id).single(),
     supabase.from("pages").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase
+      .from("permanent_grants")
+      .select("page_id", { count: "exact", head: true })
+      .eq("user_id", user.id),
   ]);
   const tier = resolveTier(profile?.tier as Tier | undefined, profile?.tier_expires_at);
   const entitlements = getProfileEntitlements(profile);
+  // Keepsake permanent-grant pages don't count against the plan limit, so
+  // mirror countablePages() here or the display disagrees with enforcement.
+  const countablePages = Math.max(0, (pageCount ?? 0) - (grantCount ?? 0));
 
   return (
     <div className="px-6 py-10 sm:py-14 max-w-xl">
@@ -43,7 +50,7 @@ export default async function AccountSettingsPage() {
           <span className="font-heading italic text-xl font-light">{TIER_LABEL[tier]}</span>
         </div>
         <p className="font-copy text-[13px] text-muted leading-relaxed">
-          {pageCount ?? 0} of {entitlements.maxPages} pages · up to{" "}
+          {countablePages} of {entitlements.maxPages} pages · up to{" "}
           {entitlements.maxImagesPerPage} images per page
           {entitlements.hiFiUploads && " · high-fidelity uploads"}
         </p>

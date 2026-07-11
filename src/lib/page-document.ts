@@ -19,6 +19,8 @@ export interface PageImage {
   hasVariants?: boolean;
   /** True when a 2560px xl variant also exists (hi-fi uploads, Pro+). */
   hasXl?: boolean;
+  /** True when {lg,md,sm,xl}.wm.jpg siblings exist. */
+  hasWatermark?: boolean;
   width: number | null;
   height: number | null;
   alt: string;
@@ -137,11 +139,14 @@ export interface PageDisplaySettings {
   protectPhotos: boolean;
   /** Largest variant served to visitors: "md" caps files at 1000px. */
   maxPhotoRes: "full" | "md";
+  /** Serve name-stamped variants on the published page. */
+  watermark: boolean;
 }
 
 export const DEFAULT_DISPLAY_SETTINGS: PageDisplaySettings = {
   protectPhotos: false,
   maxPhotoRes: "full",
+  watermark: false,
 };
 
 export interface PageDocument {
@@ -167,13 +172,17 @@ export function displaySettings(doc: PageDocument): PageDisplaySettings {
   return doc.settings ?? DEFAULT_DISPLAY_SETTINGS;
 }
 
-/** Frozen snapshot written on publish; the only thing public routes read. */
+/** Frozen snapshot written on publish; the only thing public routes read.
+ * `cover` is frozen here too so public surfaces (profile cards, OG images)
+ * never read the live draft columns, which autosave keeps current with the
+ * unpublished draft. */
 export interface PublishedSnapshot {
   snapshotVersion: 1;
   document: PageDocument;
   theme: string;
   themeSettings: Record<string, unknown>;
   title: string;
+  cover: string | null;
   publishedAt: string;
 }
 
@@ -299,17 +308,23 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function sanitizeImage(v: unknown): PageImage | null {
   if (!isRecord(v) || typeof v.path !== "string" || v.path === "") return null;
+  // Cap every string field. This runs on raw client JSON in savePageDraft;
+  // the upload route's own length checks never touch this path, so without
+  // caps here alt/caption/blur/path could be sent up to the action body
+  // limit and echoed into the DOM for every visitor. Blur cap mirrors
+  // media-validation's MAX_BLUR_LENGTH (4000).
   return {
-    id: typeof v.id === "string" ? v.id : newSectionId(),
-    assetId: typeof v.assetId === "string" ? v.assetId : null,
-    path: v.path,
+    id: typeof v.id === "string" ? v.id.slice(0, 100) : newSectionId(),
+    assetId: typeof v.assetId === "string" ? v.assetId.slice(0, 100) : null,
+    path: v.path.slice(0, 2048),
     hasVariants: v.hasVariants === true,
     hasXl: v.hasXl === true,
+    hasWatermark: v.hasWatermark === true,
     width: typeof v.width === "number" ? v.width : null,
     height: typeof v.height === "number" ? v.height : null,
-    alt: typeof v.alt === "string" ? v.alt : "",
-    caption: typeof v.caption === "string" ? v.caption : "",
-    blur: typeof v.blur === "string" ? v.blur : null,
+    alt: str(v.alt, 500),
+    caption: str(v.caption, 500),
+    blur: typeof v.blur === "string" ? v.blur.slice(0, 4000) : null,
     focal:
       isRecord(v.focal) && typeof v.focal.x === "number" && typeof v.focal.y === "number"
         ? { x: Math.min(100, Math.max(0, v.focal.x)), y: Math.min(100, Math.max(0, v.focal.y)) }
@@ -390,8 +405,10 @@ export function sanitizeDisplaySettings(v: unknown): PageDisplaySettings | undef
   const settings: PageDisplaySettings = {
     protectPhotos: v.protectPhotos === true,
     maxPhotoRes: oneOf(v.maxPhotoRes, ["full", "md"] as const, "full"),
+    watermark: v.watermark === true,
   };
-  const isDefault = !settings.protectPhotos && settings.maxPhotoRes === "full";
+  const isDefault =
+    !settings.protectPhotos && settings.maxPhotoRes === "full" && !settings.watermark;
   return isDefault ? undefined : settings;
 }
 

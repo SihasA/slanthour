@@ -45,8 +45,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect authenticated application routes
-  const isProtected = ["/dashboard", "/editor", "/settings", "/pages"].some(
+  // Protect authenticated application routes. keepsake-view is an internal
+  // render page the archive export self-fetches (src/lib/keepsake/
+  // render.ts) — it re-checks ownership itself, but it must never be
+  // reachable signed out either.
+  const isProtected = ["/dashboard", "/editor", "/settings", "/pages", "/keepsake-view"].some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   );
   if (!user && isProtected) {
@@ -74,6 +77,7 @@ export const config = {
     "/editor/:path*",
     "/settings/:path*",
     "/pages/:path*",
+    "/keepsake-view/:path*",
     "/login",
     "/signup",
     "/forgot-password",

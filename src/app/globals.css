@@ -36,12 +36,17 @@ body {
 
 /* ─── Landing: entrance choreography, texture, ink details ─── */
 
+/* Entrance fades start at 0.02, not 0: content painted fully transparent
+   is excluded from LCP candidacy, and the compositor-driven fade never
+   repaints, so Chrome scored the tiny header logo as LCP instead of the
+   headline or hero photograph. Barely visible counts as painted; the
+   look is unchanged. */
 @keyframes riseIn {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0.02; transform: translateY(18px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes photoIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  from { opacity: 0.02; transform: translateY(16px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
 @keyframes slowDrift {
@@ -50,44 +55,18 @@ body {
 }
 
 .rise-in {
-  opacity: 0;
+  opacity: 0.02;
   animation: riseIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--rise-delay, 0ms);
 }
 .photo-in {
-  opacity: 0;
+  opacity: 0.02;
   animation: photoIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--rise-delay, 0ms);
 }
 /* Museum-slow zoom inside a fixed frame. */
 .slow-drift {
   animation: slowDrift 16s ease-in-out infinite alternate;
-}
-
-/* Cycling word — six fixed-height rows, last duplicates the first for a
-   seamless loop. Holds each word, then slides to the next. */
-.word-cycle {
-  display: inline-block;
-  overflow: hidden;
-  height: 1.5em;
-  vertical-align: bottom;
-}
-.word-cycle > span {
-  display: block;
-  animation: wordCycle 12s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-}
-.word-cycle > span > span {
-  display: block;
-  height: 1.5em;
-  line-height: 1.5em;
-}
-@keyframes wordCycle {
-  0%, 15% { transform: translateY(0); }
-  20%, 35% { transform: translateY(-1.5em); }
-  40%, 55% { transform: translateY(-3em); }
-  60%, 75% { transform: translateY(-4.5em); }
-  80%, 95% { transform: translateY(-6em); }
-  100% { transform: translateY(-7.5em); }
 }
 
 /* Hover underline that draws itself in. */
@@ -115,6 +94,42 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
+/* ─── The slanted hour: homepage light choreography ──────────── */
+
+/* A slow beam of golden light sweeping across a print. Composited via
+   transform (not background-position) so it never repaints per frame. */
+.light-sweep {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.light-sweep::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  right: -60%;
+  background: linear-gradient(
+    104deg,
+    transparent 32%,
+    rgba(255, 190, 110, 0.09) 44%,
+    rgba(255, 152, 50, 0.22) 50%,
+    rgba(255, 190, 110, 0.09) 56%,
+    transparent 68%
+  );
+  transform: translateX(-38%);
+  animation: lightSweep 15s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes lightSweep {
+  0% { transform: translateX(-38%); }
+  52% { transform: translateX(38%); }
+  100% { transform: translateX(38%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise-in,
   .photo-in {
@@ -124,17 +139,19 @@ body {
   .slow-drift {
     animation: none;
   }
-  .word-cycle > span {
-    animation: none;
-  }
   .fade-up {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
   }
+  .light-sweep {
+    animation: none;
+    opacity: 0;
+  }
 }
 
-/* ─── Utility: hide scrollbar for horizontally-scrollable nav strips ── */
+/* ─── Utility: hide scrollbar for horizontally-scrollable nav strips ──
+   Mirrored in src/lib/keepsake/css.ts for archive exports — keep in sync. */
 
 .no-scrollbar {
   scrollbar-width: none;

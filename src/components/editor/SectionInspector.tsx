@@ -74,6 +74,8 @@ export function SectionInspector({
   theme,
   dispatch,
   hiFiUploads = false,
+  watermarkLabel,
+  pageCapacityLeft = Infinity,
 }: {
   section: Section | null;
   /** Full section list, for cross-section photo moves. */
@@ -81,6 +83,9 @@ export function SectionInspector({
   theme: string;
   dispatch: React.Dispatch<EditorAction>;
   hiFiUploads?: boolean;
+  watermarkLabel?: string;
+  /** Images still addable to the page under the plan cap (Infinity = no cap). */
+  pageCapacityLeft?: number;
 }) {
   // Conversion refusals surface inline, scoped to the section they refer to.
   const [convertError, setConvertError] = useState<{ id: string; message: string } | null>(null);
@@ -378,7 +383,14 @@ export function SectionInspector({
           <label className={fieldLabel}>
             {sectionImageCapacity(section.type) === 1 ? "Image" : "Images"}
           </label>
-          <ImageManager section={section} allSections={allSections} dispatch={dispatch} hiFiUploads={hiFiUploads} />
+          <ImageManager
+            section={section}
+            allSections={allSections}
+            dispatch={dispatch}
+            hiFiUploads={hiFiUploads}
+            watermarkLabel={watermarkLabel}
+            pageCapacityLeft={pageCapacityLeft}
+          />
         </div>
       )}
     </div>

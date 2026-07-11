@@ -8,8 +8,9 @@
 //   4. sanitises input before persisting.
 // Actions return { ok } results instead of throwing across the boundary.
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { pageCacheTag } from "@/lib/page-cache";
 import {
   collectAssetIds,
   countImages,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/page-document";
 import { MEDIA_BUCKET } from "@/lib/constants";
 import { getProfileEntitlements } from "@/lib/entitlements";
+import { createTemplateDocument, isTemplateId } from "@/lib/page-templates";
 import { hashPagePassword } from "@/lib/page-password";
 import {
   slugify,
@@ -83,6 +85,10 @@ function revalidatePublic(username: string | null, slug: string) {
   if (username) {
     revalidatePath(`/${username}`);
     revalidatePath(`/${username}/${slug}`);
+    // Drops both the Data Cache entry and the Full Route Cache for this
+    // page's URL. Callers that also pass the *old* slug/username (see
+    // updatePageSettings on a slug change) invalidate both addresses.
+    revalidateTag(pageCacheTag(username, slug));
   }
 }
 
@@ -124,7 +130,10 @@ async function uniqueSlugFor(
 
 // ─── Create / duplicate / delete ─────────────────────────────────────
 
-export async function createPage(rawTitle: string): Promise<ActionResult<{ pageId: string }>> {
+export async function createPage(
+  rawTitle: string,
+  templateId?: string
+): Promise<ActionResult<{ pageId: string }>> {
   const ctx = await requireUser();
   if (!ctx) return err("Your session has expired. Sign in again.");
   const { supabase, user } = ctx;
@@ -152,7 +161,10 @@ export async function createPage(rawTitle: string): Promise<ActionResult<{ pageI
       title,
       theme: DEFAULT_THEME,
       theme_settings: defaultThemeSettings(DEFAULT_THEME),
-      draft: createEmptyDocument(),
+      // Unknown template ids fall back to blank rather than erroring: the
+      // id only ever comes from our own picker, so a mismatch means a
+      // stale client, not a user mistake worth surfacing.
+      draft: isTemplateId(templateId) ? createTemplateDocument(templateId) : createEmptyDocument(),
     })
     .select("id")
     .single();
@@ -173,6 +185,9 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ page
     return err("Page limit reached. Delete a page before duplicating.");
 
   // Fresh section/image ids; assetIds intentionally shared (same underlying files).
+  // Carry the display settings (watermark, photo protection, resolution cap):
+  // dropping them would silently downgrade a duplicated protected client page
+  // to full-resolution, unwatermarked, unprotected on its next publish.
   const doc = parseDocument(page.draft);
   const cloned: PageDocument = {
     version: doc.version,
@@ -181,6 +196,7 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ page
       const images = sectionImages(withNewId).map((img) => ({ ...img, id: newSectionId() }));
       return withSectionImages(withNewId, images);
     }),
+    ...(doc.settings ? { settings: doc.settings } : {}),
   };
 
   const slug = await uniqueSlugFor(supabase, user.id, `${page.slug.slice(0, 50)}-copy`);
@@ -285,7 +301,14 @@ export async function savePageDraft(
   const { data: profile } = await supabase
     .from("profiles").select("tier, tier_expires_at").eq("id", user.id).single();
   const entitlements = getProfileEntitlements(profile);
-  if (countImages(document) > entitlements.maxImagesPerPage)
+  // Only block saves that push the image count HIGHER past the cap. Rejecting
+  // every save once a page is already over cap (a tier lapse or downgrade
+  // below its existing count) would lock the editor on a pure text edit —
+  // the editor is never paywalled. A save that keeps or lowers the count
+  // always goes through so the owner can edit their way back under.
+  const priorImages = countImages(parseDocument(page.draft));
+  const nextImages = countImages(document);
+  if (nextImages > entitlements.maxImagesPerPage && nextImages > priorImages)
     return err(`Your plan allows ${entitlements.maxImagesPerPage} images per page.`);
 
   const cover = firstImage(document);
@@ -398,12 +421,18 @@ export async function publishPage(pageId: string): Promise<ActionResult<{ url: s
   // the page payload (leaking drafts and paying egress for nothing).
   const { tray: _tray, ...publishedDocument } = document;
 
+  // Freeze the cover into the snapshot. Public surfaces read this, never the
+  // live pages.cover_path column, which autosave keeps pointed at the draft.
+  const cover = firstImage(publishedDocument);
+  const coverPath = cover && !cover.path.startsWith("http") ? cover.path : null;
+
   const snapshot: PublishedSnapshot = {
     snapshotVersion: 1,
     document: publishedDocument,
     theme: page.theme,
     themeSettings: sanitizeThemeSettings(page.theme, page.theme_settings),
     title: page.title,
+    cover: coverPath,
     publishedAt: new Date().toISOString(),
   };
 

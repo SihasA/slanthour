@@ -42,7 +42,7 @@ const TIERS = [
       "25 pages, 200 photographs each",
       "High-fidelity images (2560px) for large screens",
       "Page views, counted privately, without cookies or trackers",
-      "Coming: proofing galleries, password-protected pages where clients pick their favourites",
+      "3 proofing galleries: private links where clients pick their favourites",
     ],
   },
   {
@@ -53,7 +53,8 @@ const TIERS = [
       "100 pages, 500 photographs each",
       "Everything in Pro",
       "For studios presenting and delivering to clients",
-      "Coming: unlimited proofing galleries and high-fidelity client downloads",
+      "Unlimited proofing galleries",
+      "Coming: high-fidelity client downloads",
     ],
   },
 ];

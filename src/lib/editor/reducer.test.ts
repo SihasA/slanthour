@@ -235,10 +235,18 @@ describe("display settings", () => {
   it("sets, patches and collapses back to absent", () => {
     let state = freshState();
     state = editorReducer(state, { type: "setDisplaySettings", patch: { protectPhotos: true } });
-    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "full" });
+    expect(state.content.document.settings).toEqual({
+      protectPhotos: true,
+      maxPhotoRes: "full",
+      watermark: false,
+    });
 
     state = editorReducer(state, { type: "setDisplaySettings", patch: { maxPhotoRes: "md" } });
-    expect(state.content.document.settings).toEqual({ protectPhotos: true, maxPhotoRes: "md" });
+    expect(state.content.document.settings).toEqual({
+      protectPhotos: true,
+      maxPhotoRes: "md",
+      watermark: false,
+    });
 
     state = editorReducer(state, {
       type: "setDisplaySettings",
@@ -340,5 +348,37 @@ describe("tray and cross-section moves", () => {
     state = editorReducer(state, { type: "undo" });
     expect(trayImgs(state)).toHaveLength(6);
     expect(sectionImages(state.content.document.sections[0])).toHaveLength(0);
+  });
+});
+
+describe("applyTemplate", () => {
+  it("appends the whole skeleton as one undo step and selects its first section", () => {
+    let state = editorReducer(freshState(), { type: "applyTemplate", templateId: "portfolio" });
+    const sections = state.content.document.sections;
+    expect(sections.map((s) => s.type)).toEqual(["hero", "heading", "row", "split", "grid"]);
+    expect(state.selectedSectionId).toBe(sections[0].id);
+    expect(canUndo(state)).toBe(true);
+
+    state = editorReducer(state, { type: "undo" });
+    expect(state.content.document.sections).toHaveLength(0);
+  });
+
+  it("appends below existing sections instead of replacing them", () => {
+    let state = editorReducer(freshState(), { type: "addSection", sectionType: "text" });
+    state = editorReducer(state, { type: "applyTemplate", templateId: "one-series" });
+    expect(state.content.document.sections.map((s) => s.type)).toEqual([
+      "text", "hero", "text", "sequence",
+    ]);
+  });
+
+  it("then fills from the tray straight into the template", () => {
+    let state = editorReducer(freshState(), { type: "applyTemplate", templateId: "one-series" });
+    const photos = Array.from({ length: 4 }, (_, i) => img(`u/m/t${i}/lg.jpg`));
+    state = editorReducer(state, { type: "addToTray", images: photos });
+    state = editorReducer(state, { type: "fillFromTray" });
+    const [hero, , sequence] = state.content.document.sections;
+    expect(sectionImages(hero)).toHaveLength(1);
+    expect(sectionImages(sequence)).toHaveLength(3);
+    expect(state.content.document.tray).toBeUndefined();
   });
 });
