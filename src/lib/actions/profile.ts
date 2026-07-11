@@ -31,10 +31,11 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
 
   const { data: current } = await supabase
     .from("profiles")
-    .select("username")
+    .select("username, display_name")
     .eq("id", user.id)
     .single();
   if (!current) return { ok: false, error: "Profile not found." };
+  const displayNameChanged = display_name !== current.display_name;
 
   const updates: Record<string, unknown> = { display_name, bio, updated_at: new Date().toISOString() };
 
@@ -67,6 +68,14 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
       revalidateTag(pageCacheTag(username, slug));
       revalidatePath(`/${current.username}/${slug}`);
       revalidatePath(`/${username}/${slug}`);
+    }
+  } else if (displayNameChanged) {
+    // The display name is rendered on every published page (tab/OG title,
+    // author, footer) from the cached snapshot join, so a name-only change
+    // must invalidate each page's tag or the old name lingers up to an hour.
+    const { data: pages } = await supabase.from("pages").select("slug").eq("user_id", user.id);
+    for (const row of pages ?? []) {
+      revalidateTag(pageCacheTag(current.username, row.slug as string));
     }
   }
 

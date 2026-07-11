@@ -155,7 +155,7 @@ export function ProofingManager({ gallery, photos }: ProofingManagerProps) {
             {uploading ? `Uploading ${uploading.done} of ${uploading.total}` : "+ Add photos"}
           </button>
           <span className="text-xs font-copy text-muted/70">
-            Previews only (no full-size files live here). Filenames are kept — they are your
+            Previews only (no full-size files live here). Filenames are kept as your
             select list.
           </span>
         </div>

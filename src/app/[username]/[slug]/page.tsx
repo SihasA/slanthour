@@ -53,7 +53,7 @@ const loadPage = cache(async (username: string, slug: string) => {
       const { data: page } = await admin
         .from("pages")
         .select(
-          "id, user_id, slug, title, visibility, is_published, published, cover_path, profiles!inner(id, username, display_name, tier, tier_expires_at)"
+          "id, user_id, slug, title, visibility, is_published, published, profiles!inner(id, username, display_name, tier, tier_expires_at)"
         )
         .eq("profiles.username", username)
         .eq("slug", slug)
@@ -63,7 +63,7 @@ const loadPage = cache(async (username: string, slug: string) => {
       const profile = page.profiles as unknown as LoadedProfile;
       const typedPage = page as unknown as Pick<
         Page,
-        "id" | "user_id" | "slug" | "title" | "visibility" | "is_published" | "cover_path"
+        "id" | "user_id" | "slug" | "title" | "visibility" | "is_published"
       > & { published: PublishedSnapshot };
 
       return { profile, page: typedPage, badge: await showBadge(profile, typedPage.id) };
@@ -110,7 +110,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
       url: `https://slanthour.com/${profile.username}/${page.slug}`,
       siteName: "Slanthour",
       type: "article",
-      images: page.cover_path ? [{ url: storageUrl(page.cover_path) }] : undefined,
+      images: page.published.cover ? [{ url: storageUrl(page.published.cover) }] : undefined,
     },
   };
 }

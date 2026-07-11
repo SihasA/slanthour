@@ -197,6 +197,7 @@ export function ImageManager({
   dispatch,
   hiFiUploads = false,
   watermarkLabel,
+  pageCapacityLeft = Infinity,
 }: {
   section: Section;
   /** Full section list, for the touch "Send to" menu. */
@@ -204,11 +205,17 @@ export function ImageManager({
   dispatch: React.Dispatch<EditorAction>;
   hiFiUploads?: boolean;
   watermarkLabel?: string;
+  /** Images still addable to the page under the plan cap (Infinity = no cap). */
+  pageCapacityLeft?: number;
 }) {
   const images = sectionImages(section);
   const capacity = sectionImageCapacity(section.type);
   if (capacity === 0) return null;
-  const capacityLeft = capacity === Infinity ? Infinity : capacity - images.length;
+  // Open-ended sections (grid/contact-sheet/sequence) have Infinity section
+  // capacity, so without the page cap here a user could add past their plan
+  // limit and then be unable to save. Clamp to whichever runs out first.
+  const sectionLeft = capacity === Infinity ? Infinity : capacity - images.length;
+  const capacityLeft = Math.min(sectionLeft, pageCapacityLeft);
   const otherSections = allSections.filter((s) => {
     if (s.id === section.id) return false;
     const cap = sectionImageCapacity(s.type);

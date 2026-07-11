@@ -52,7 +52,9 @@ export async function compressImage(
   const maxDim = options?.maxDimension ?? PHOTO_MAX_DIMENSION;
   const quality = options?.quality ?? PHOTO_QUALITY;
 
-  const bitmap = await createImageBitmap(file);
+  // Bake in EXIF orientation explicitly so portrait phone photos aren't left
+  // sideways on browsers that don't auto-rotate by default.
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   const { width: origW, height: origH } = bitmap;
 
   // Calculate target dimensions

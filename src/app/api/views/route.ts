@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 import { isBotUserAgent } from "@/lib/analytics";
 import { parseBeaconBody } from "@/lib/view-beacon";
 
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const pageId = parseBeaconBody(raw);
   if (!pageId) return noContent();
 
-  const ip = (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(request.headers);
   const limited = rateLimit("page-view", `${ip}:${pageId}`, 20, 60);
   if (!limited.allowed) return noContent();
 

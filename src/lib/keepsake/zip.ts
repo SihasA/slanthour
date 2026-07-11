@@ -45,6 +45,12 @@ function u16(n: number): Uint8Array {
 }
 
 function u32(n: number): Uint8Array {
+  // This store-only writer has no Zip64 support, so a size or offset past
+  // 4 GiB would silently wrap and corrupt the archive. Fail loudly instead;
+  // a caller can catch it and fall back rather than ship a broken zip.
+  if (n < 0 || n > 0xffffffff) {
+    throw new RangeError("Archive too large for this zip writer (over 4 GiB).");
+  }
   const b = new Uint8Array(4);
   new DataView(b.buffer).setUint32(0, n, true);
   return b;

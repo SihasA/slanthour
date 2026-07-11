@@ -33,7 +33,13 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
+  // Keyset cursor over the full sort key (created_at, id). Keying on
+  // created_at alone drops rows once more than a page share one timestamp
+  // (bulk backfills and concurrent multi-select uploads make that real):
+  // the next page's `created_at <` excludes the whole timestamp group, not
+  // just the rows already returned. Encode both parts as "created_at|id".
   const cursor = new URL(request.url).searchParams.get("cursor");
+  const [cursorCreatedAt, cursorId] = cursor ? cursor.split("|") : [];
 
   let query = supabase
     .from("media_assets")
@@ -44,14 +50,19 @@ export async function GET(request: Request) {
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(LIBRARY_PAGE_SIZE);
-  if (cursor) query = query.lt("created_at", cursor);
+  if (cursorCreatedAt && cursorId) {
+    query = query.or(
+      `created_at.lt.${cursorCreatedAt},and(created_at.eq.${cursorCreatedAt},id.lt.${cursorId})`
+    );
+  }
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: "Could not load your library." }, { status: 500 });
 
   const assets = data ?? [];
+  const last = assets[assets.length - 1];
   const nextCursor =
-    assets.length === LIBRARY_PAGE_SIZE ? assets[assets.length - 1].created_at : null;
+    assets.length === LIBRARY_PAGE_SIZE && last ? `${last.created_at}|${last.id}` : null;
   return NextResponse.json({ assets, nextCursor });
 }
 

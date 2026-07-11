@@ -128,6 +128,33 @@ describe("parseDocument", () => {
     expect(sectionImages(doc.sections[0])).toHaveLength(2);
     expect(sectionImages(doc.sections[1])).toHaveLength(3);
   });
+
+  it("caps image text fields so hostile JSON can't bloat the document", () => {
+    const doc = parseDocument({
+      version: 1,
+      sections: [
+        {
+          id: "h",
+          type: "hero",
+          image: {
+            id: "i",
+            path: "u/m/a/lg.jpg",
+            alt: "x".repeat(5000),
+            caption: "y".repeat(5000),
+            blur: "z".repeat(9000),
+          },
+          title: "",
+          subtitle: "",
+          height: "full",
+        },
+      ],
+    });
+    const hero = doc.sections[0];
+    if (hero.type !== "hero" || !hero.image) throw new Error("expected hero image");
+    expect(hero.image.alt.length).toBeLessThanOrEqual(500);
+    expect(hero.image.caption.length).toBeLessThanOrEqual(500);
+    expect((hero.image.blur ?? "").length).toBeLessThanOrEqual(4000);
+  });
 });
 
 describe("sanitizeSection", () => {
