@@ -16,6 +16,7 @@ import {
 } from "react";
 import type { PageImage } from "@/lib/page-document";
 import { clampVariant, imageUrl } from "@/lib/media";
+import { FOCUSABLE_SELECTOR, nextTrapIndex } from "./focus-trap";
 import { servingCap, usePageDisplay } from "./PageDisplay";
 
 interface LightboxContextValue {
@@ -44,6 +45,7 @@ export function LightboxProvider({
   const [index, setIndex] = useState<number | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const open = useCallback(
     (image: PageImage, images: PageImage[]) => {
@@ -79,9 +81,19 @@ export function LightboxProvider({
       else if (e.key === "ArrowRight") step(1);
       else if (e.key === "ArrowLeft") step(-1);
       else if (e.key === "Tab") {
-        // Single focusable control — keep focus on the dialog.
+        // Trap focus inside the dialog: cycle Tab/Shift+Tab through every
+        // currently visible control (close, and prev/next when the group
+        // has more than one image), wrapping at the ends.
+        const container = dialogRef.current;
+        if (!container) return;
+        const focusables = Array.from(
+          container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+        ).filter((el) => el.offsetParent !== null);
+        const currentIndex = focusables.indexOf(document.activeElement as HTMLElement);
+        const next = nextTrapIndex(focusables.length, currentIndex, e.shiftKey ? -1 : 1);
+        if (next === -1) return;
         e.preventDefault();
-        closeButtonRef.current?.focus();
+        focusables[next]?.focus();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -100,6 +112,7 @@ export function LightboxProvider({
       {children}
       {current && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={current.alt || current.caption || "Photograph"}
