@@ -1,19 +1,28 @@
 // ─── Public profile ──────────────────────────────────────────────────
 // /:username — display name, bio, avatar and the person's published
 // PUBLIC pages (unlisted and password-protected pages never appear here).
-// Reads use the anon client: RLS only exposes published public pages.
+//
+// The Supabase read is cached via unstable_cache, tagged with
+// profileCacheTag(username); a cache hit makes zero Supabase calls. Every
+// mutation that can change the header or the published-page grid
+// invalidates that tag (see src/lib/actions/profile.ts and
+// src/lib/actions/pages.ts), so a republish or profile edit is never served
+// stale. Reads use the anon client — RLS only exposes published public
+// pages — via a cookie-free instance (see src/lib/supabase/anon.ts), since
+// the cached function must carry no request-scoped state (no
+// cookies()/headers() inside unstable_cache).
 
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createAnonClient } from "@/lib/supabase/anon";
 import { storageUrl } from "@/lib/media";
 import { getTheme } from "@/themes/registry";
+import { profileCacheTag, PUBLISHED_PAGE_REVALIDATE } from "@/lib/page-cache";
 import type { PublishedSnapshot } from "@/lib/page-document";
 import type { Profile } from "@/types";
-
-export const dynamic = "force-dynamic";
 
 type RouteProps = { params: Promise<{ username: string }> };
 
@@ -24,28 +33,37 @@ type PageRow = { id: string; slug: string; theme: string; published: PublishedSn
 type PageCard = { id: string; slug: string; theme: string; title: string; cover: string | null };
 
 // Profile + its published public pages in one round trip (pages embedded
-// through the user_id FK; RLS only exposes published public rows to anon),
-// React-cached so generateMetadata and the page body share the fetch.
+// through the user_id FK; RLS only exposes published public rows to anon).
+// Wrapped per-call in unstable_cache, tagged per profile and revalidated
+// hourly as a safety net (explicit mutations invalidate instantly via the
+// tag). The outer React cache() dedupes across generateMetadata and the
+// page body within a single request.
 const loadProfile = cache(async (username: string) => {
-  const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*, pages(id, slug, theme, published, published_at)")
-    .eq("username", username)
-    .eq("pages.is_published", true)
-    .eq("pages.visibility", "public")
-    .order("published_at", { referencedTable: "pages", ascending: false })
-    .single();
-  if (!profile) return null;
-  const { pages, ...rest } = profile as Profile & { pages: PageRow[] };
-  const cards: PageCard[] = (pages ?? []).map((p) => ({
-    id: p.id,
-    slug: p.slug,
-    theme: p.theme,
-    title: p.published?.title ?? "Untitled",
-    cover: p.published?.cover ?? null,
-  }));
-  return { profile: rest as Profile, cards };
+  return unstable_cache(
+    async () => {
+      const supabase = createAnonClient();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*, pages(id, slug, theme, published, published_at)")
+        .eq("username", username)
+        .eq("pages.is_published", true)
+        .eq("pages.visibility", "public")
+        .order("published_at", { referencedTable: "pages", ascending: false })
+        .single();
+      if (!profile) return null;
+      const { pages, ...rest } = profile as Profile & { pages: PageRow[] };
+      const cards: PageCard[] = (pages ?? []).map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        theme: p.theme,
+        title: p.published?.title ?? "Untitled",
+        cover: p.published?.cover ?? null,
+      }));
+      return { profile: rest as Profile, cards };
+    },
+    ["profile", username],
+    { tags: [profileCacheTag(username)], revalidate: PUBLISHED_PAGE_REVALIDATE }
+  )();
 });
 
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
