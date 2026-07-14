@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { archiveEligibility } from "@/lib/keepsake/eligibility";
+import { isArchivableImageCount } from "@/lib/keepsake/archive-size";
 import { collectArchiveImages } from "@/lib/keepsake/collect";
 import { localizeHtml } from "@/lib/keepsake/localize";
 import { compileArchiveCss } from "@/lib/keepsake/css";
@@ -119,6 +120,21 @@ export async function GET(request: Request, { params }: RouteProps) {
   const document = parseDocument(snapshot.document);
   const watermarkOn = displaySettings(document).watermark;
   const images = collectArchiveImages(document);
+
+  // Guard the OTHER failure mode from zip.ts's 4 GiB check: too many photos
+  // to finish streaming within maxDuration. A platform timeout kill here
+  // would leave a zip with no end-of-central-directory record — corrupt,
+  // with no explanation — so refuse up front, before any expensive work
+  // (SSR self-fetch, Tailwind compile, image fetches) has started.
+  if (!isArchivableImageCount(images.length)) {
+    return NextResponse.json(
+      {
+        error:
+          "This page has too many photographs to export in one download. Split it into smaller pages, or contact slanthour.com and we will export it for you.",
+      },
+      { status: 413 }
+    );
+  }
 
   let fragment: string;
   try {
