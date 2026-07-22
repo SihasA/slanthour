@@ -24,6 +24,7 @@ import {
   type PublishedSnapshot,
 } from "@/lib/page-document";
 import { MEDIA_BUCKET } from "@/lib/constants";
+import { SHOWCASE_DOCUMENT, SHOWCASE_TITLE } from "@/lib/demo/showcase";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { createTemplateDocument, isTemplateId } from "@/lib/page-templates";
 import { hashPagePassword } from "@/lib/page-password";
@@ -488,4 +489,64 @@ export async function checkSlugAvailable(
     .limit(1);
 
   return { ok: true, available: (data ?? []).length === 0 };
+}
+
+// ─── Start from an example (cold-start relief) ───────────────────────
+
+/**
+ * Clones the fixed showcase document (the same one shown at /demo and on
+ * the landing page) into a brand-new page owned by the caller. Lets a
+ * first-run user open a finished, good-looking page instead of an empty
+ * dashboard and empty editor sections. The source document never varies
+ * and never carries another user's data; only the ids are fresh.
+ */
+export async function startFromExample(): Promise<ActionResult<{ pageId: string }>> {
+  const ctx = await requireUser();
+  if (!ctx) return err("Your session has expired. Sign in again.");
+  const { supabase, user } = ctx;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tier, tier_expires_at")
+    .eq("id", user.id)
+    .single();
+  const entitlements = getProfileEntitlements(profile);
+
+  if ((await countablePages(supabase, user.id)) >= entitlements.maxPages)
+    return err(`Your plan allows ${entitlements.maxPages} pages. Delete one to create another.`);
+
+  // Sanitised through the same parser every stored draft goes through,
+  // then given fresh section/image ids exactly like duplicatePage.
+  const doc = parseDocument(SHOWCASE_DOCUMENT);
+  const cloned: PageDocument = {
+    version: doc.version,
+    sections: doc.sections.map((section) => {
+      const withNewId = { ...section, id: newSectionId() };
+      const images = sectionImages(withNewId).map((img) => ({ ...img, id: newSectionId() }));
+      return withSectionImages(withNewId, images);
+    }),
+    ...(doc.settings ? { settings: doc.settings } : {}),
+  };
+
+  const title = SHOWCASE_TITLE.slice(0, PAGE_TITLE_MAX_LENGTH);
+  const slug = await uniqueSlugFor(supabase, user.id, slugify(title));
+  const cover = firstImage(cloned);
+
+  const { data, error } = await supabase
+    .from("pages")
+    .insert({
+      user_id: user.id,
+      slug,
+      title,
+      theme: DEFAULT_THEME,
+      theme_settings: defaultThemeSettings(DEFAULT_THEME),
+      draft: cloned,
+      cover_path: cover?.path ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) return err("Could not start from the example. Try again.");
+  revalidatePath("/dashboard");
+  return { ok: true, pageId: data.id as string };
 }

@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { PageCard, type DashboardPage } from "@/components/dashboard/PageCard";
+import { StartFromExample } from "@/components/dashboard/StartFromExample";
 
 export const dynamic = "force-dynamic";
 
@@ -97,11 +98,15 @@ export default async function DashboardPage() {
             Turn a collection of photographs into a beautifully designed page: a series, a trip,
             a person, a project.
           </p>
+          <StartFromExample />
+          <p className="mt-4 font-copy text-[11px] text-muted/70">
+            See a finished page and make it yours, no photos required yet.
+          </p>
           <Link
             href="/pages/new"
-            className="inline-block px-6 py-3 text-[10px] uppercase tracking-wide bg-foreground text-background hover:bg-accent transition-colors"
+            className="mt-6 inline-block text-[10px] uppercase tracking-wide text-muted underline underline-offset-2 hover:text-accent transition-colors"
           >
-            Create your first page
+            Or create your first page from scratch
           </Link>
         </div>
       ) : (
@@ -117,15 +122,19 @@ export default async function DashboardPage() {
               />
             ))}
           </ul>
-          {!analytics && list.some((p) => p.is_published) && (
-            <p className="mt-8 text-[11px] font-copy text-muted/70">
-              Views of your published pages are being counted.{" "}
-              <Link href="/pricing" className="text-muted underline underline-offset-2 hover:text-accent transition-colors">
-                See them on Pro
-              </Link>
-              .
-            </p>
-          )}
+          <p className="mt-8 text-[11px] font-copy text-muted/70">
+            {!analytics && list.some((p) => p.is_published) && (
+              <>
+                Views of your published pages are being counted.{" "}
+                <Link href="/pricing" className="text-muted underline underline-offset-2 hover:text-accent transition-colors">
+                  See them on Pro
+                </Link>
+                .{" "}
+              </>
+            )}
+            Curious what a finished page looks like?{" "}
+            <StartFromExample primary={false} />
+          </p>
         </>
       )}
     </div>
