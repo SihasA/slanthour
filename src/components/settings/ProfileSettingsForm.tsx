@@ -17,6 +17,9 @@ export function ProfileSettingsForm({ profile }: { profile: Profile }) {
   const [displayName, setDisplayName] = useState(profile.display_name);
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio ?? "");
+  const [website, setWebsite] = useState(profile.website_url ?? "");
+  const [instagram, setInstagram] = useState(profile.instagram_handle ?? "");
+  const [contactEmail, setContactEmail] = useState(profile.email_public ?? "");
   const [avatarPath, setAvatarPath] = useState(profile.avatar_url);
   const [status, setStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,7 +33,14 @@ export function ProfileSettingsForm({ profile }: { profile: Profile }) {
     e.preventDefault();
     setBusy(true);
     setStatus(null);
-    const result = await updateProfile({ display_name: displayName, username, bio });
+    const result = await updateProfile({
+      display_name: displayName,
+      username,
+      bio,
+      website_url: website,
+      instagram_handle: instagram,
+      email_public: contactEmail,
+    });
     setBusy(false);
     setStatus(
       result.ok
@@ -163,6 +173,74 @@ export function ProfileSettingsForm({ profile }: { profile: Profile }) {
           placeholder="A line or two about you or your work (optional)"
           className={`${textInput} resize-y`}
         />
+      </div>
+
+      {/* ── Contact links (all optional, off until set) ── */}
+      <div className="border-t border-rule pt-7 flex flex-col gap-7">
+        <div>
+          <span className={fieldLabel}>Contact and links</span>
+          <p className="text-[12px] text-muted font-copy leading-relaxed -mt-1">
+            All optional. Anything you add here shows on your public profile and at the
+            foot of your published pages so visitors can reach you. Leave a field empty to
+            keep it private.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="website" className={fieldLabel}>
+            Website
+          </label>
+          <input
+            id="website"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            inputMode="url"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="your-studio.com"
+            className={textInput}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="instagram" className={fieldLabel}>
+            Instagram
+          </label>
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] text-muted font-copy shrink-0">@</span>
+            <input
+              id="instagram"
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="yourhandle"
+              className={textInput}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="contact-email" className={fieldLabel}>
+            Contact email
+          </label>
+          <input
+            id="contact-email"
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="you@example.com"
+            className={textInput}
+          />
+          <p className="mt-1.5 text-[11px] text-muted font-copy">
+            Shown publicly only if you fill this in. Leave it empty to hide your email.
+          </p>
+        </div>
       </div>
 
       {status && (

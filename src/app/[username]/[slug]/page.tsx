@@ -22,6 +22,7 @@ import { hasPageAccess } from "@/lib/page-gate";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { parseDocument, type PublishedSnapshot } from "@/lib/page-document";
 import { storageUrl } from "@/lib/media";
+import { safeExternalUrl, instagramUrl, mailtoHref } from "@/lib/links";
 import { pageCacheTag, PUBLISHED_PAGE_REVALIDATE } from "@/lib/page-cache";
 import { PageRenderer } from "@/themes/PageRenderer";
 import { PasswordGate } from "@/components/public/PasswordGate";
@@ -33,7 +34,14 @@ type RouteProps = { params: Promise<{ username: string; slug: string }> };
 
 type LoadedProfile = Pick<
   Profile,
-  "id" | "username" | "display_name" | "tier" | "tier_expires_at"
+  | "id"
+  | "username"
+  | "display_name"
+  | "tier"
+  | "tier_expires_at"
+  | "website_url"
+  | "instagram_handle"
+  | "email_public"
 >;
 
 // One joined query (owner embedded via the user_id FK) instead of two
@@ -53,7 +61,7 @@ const loadPage = cache(async (username: string, slug: string) => {
       const { data: page } = await admin
         .from("pages")
         .select(
-          "id, user_id, slug, title, visibility, is_published, published, profiles!inner(id, username, display_name, tier, tier_expires_at)"
+          "id, user_id, slug, title, visibility, is_published, published, profiles!inner(id, username, display_name, tier, tier_expires_at, website_url, instagram_handle, email_public)"
         )
         .eq("profiles.username", username)
         .eq("slug", slug)
@@ -132,6 +140,14 @@ export default async function PublishedPage({ params }: RouteProps) {
     sanitizeThemeSettings(snapshot.theme, snapshot.themeSettings)
   );
 
+  // Opt-in contact links from the owner's profile (not the page snapshot).
+  // Each href is rebuilt through the safe builder at render time, so a
+  // hostile stored value can never become a live href.
+  const website = safeExternalUrl(profile.website_url);
+  const instagram = instagramUrl(profile.instagram_handle);
+  const email = mailtoHref(profile.email_public);
+  const hasContact = Boolean(website || instagram || email);
+
   return (
     <>
       {/* Page-scoped body background (theme colours never leak elsewhere). */}
@@ -151,6 +167,44 @@ export default async function PublishedPage({ params }: RouteProps) {
         mode="published"
       />
       <footer className="py-8 text-center" style={{ background: tokens.background }}>
+        {hasContact && (
+          <nav
+            aria-label="Contact"
+            className="mb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[10px] uppercase tracking-[0.25em]"
+          >
+            {website && (
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="opacity-60 hover:opacity-100 transition-opacity"
+                style={{ color: tokens.muted }}
+              >
+                Website
+              </a>
+            )}
+            {instagram && (
+              <a
+                href={instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="opacity-60 hover:opacity-100 transition-opacity"
+                style={{ color: tokens.muted }}
+              >
+                Instagram
+              </a>
+            )}
+            {email && (
+              <a
+                href={email}
+                className="opacity-60 hover:opacity-100 transition-opacity"
+                style={{ color: tokens.muted }}
+              >
+                Email
+              </a>
+            )}
+          </nav>
+        )}
         <a
           href={`/${profile.username}`}
           className="text-[10px] uppercase tracking-[0.25em] opacity-50 hover:opacity-90 transition-opacity"
