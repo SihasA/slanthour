@@ -104,14 +104,19 @@ untrusted jsonb without throwing — the render path can never crash on a malfor
 Three independent layers, each assuming the others might fail:
 
 1. **Middleware** (`src/middleware.ts`) refreshes the Supabase session and gates
-   `/dashboard`, `/editor`, `/settings`, `/pages`, `/keepsake-view`. It also enforces
-   **two-factor**: a signed-in user with a verified TOTP factor whose session is still at
-   `aal1` (see below) is redirected off protected routes to `/login` until they clear the
-   challenge, so 2FA cannot be bypassed by direct navigation.
+   `/dashboard`, `/editor`, `/settings`, `/pages`, `/keepsake-view`. For **two-factor** it is a
+   convenience short-circuit only: a signed-in user with a verified TOTP factor whose session is
+   still at `aal1` (see below) is redirected off protected page routes to `/login` to clear the
+   challenge. The authoritative 2FA enforcement lives in the server-side auth guards (layer 2),
+   not here, because middleware does not run on server actions or `/api/*` routes.
 2. **Server actions** (`src/lib/actions/*`) are the *only* mutation path. Each one:
    authenticates the caller → loads the resource through the user-scoped client → **explicitly
    re-checks ownership in code** → sanitises input before persisting. They return
-   discriminated `{ ok }` results rather than throwing across the boundary.
+   discriminated `{ ok }` results rather than throwing across the boundary. The shared guards
+   (and the authenticated `/api/*` handlers: media, proofing upload, keepsake archive) also
+   reject a **2FA-pending** session (`isMfaChallengePending`, `src/lib/auth/mfa-server.ts`)
+   before touching data, so a session stuck at `aal1` cannot read or write by scripting past the
+   page-level middleware redirect.
 3. **Row-Level Security** on every table is the backstop, so a bug in a higher layer cannot
    silently expose data.
 
@@ -356,8 +361,10 @@ authenticated + ownership-checked server-side with RLS behind them. Passwords (a
 page) are hashed. Upload paths are validated for folder ownership. Rate limiting guards the
 password and upload endpoints. Accounts may opt in to **TOTP two-factor** (Supabase native
 MFA): enrolment and removal live in account settings, the login form runs the aal1→aal2
-challenge after a correct password, and middleware enforces it on protected routes. The
-aal-decision logic is a pure helper (`src/lib/auth/mfa.ts`, unit-tested). There are no backup
+challenge after a correct password, and a 2FA-pending session is rejected in the shared
+server-side auth guards and authenticated `/api/*` handlers (with middleware additionally
+short-circuiting protected page navigation). The aal-decision logic is a pure helper
+(`src/lib/auth/mfa.ts`, unit-tested), wrapped for the server by `src/lib/auth/mfa-server.ts`. There are no backup
 codes in this version, so a lost authenticator can lock a user out (surfaced at enrolment).
 Project-level MFA must be enabled in the Supabase dashboard for enrolment to succeed.
 

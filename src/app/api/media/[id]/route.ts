@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { MEDIA_BUCKET } from "@/lib/constants";
 import { collectAssetIds, parseDocument } from "@/lib/page-document";
 import type { Page } from "@/types";
@@ -23,6 +24,8 @@ export async function DELETE(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  if (await isMfaChallengePending(supabase))
+    return NextResponse.json({ error: MFA_PENDING_MESSAGE }, { status: 403 });
 
   const { data: asset } = await supabase
     .from("media_assets")

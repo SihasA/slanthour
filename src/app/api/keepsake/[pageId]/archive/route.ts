@@ -12,6 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { archiveEligibility } from "@/lib/keepsake/eligibility";
 import { isArchivableImageCount } from "@/lib/keepsake/archive-size";
 import { collectArchiveImages } from "@/lib/keepsake/collect";
@@ -72,6 +73,8 @@ export async function GET(request: Request, { params }: RouteProps) {
   if (!user) {
     return NextResponse.json({ error: "Sign in to download this archive." }, { status: 401 });
   }
+  if (await isMfaChallengePending(supabase))
+    return NextResponse.json({ error: MFA_PENDING_MESSAGE }, { status: 403 });
 
   // Each export self-fetches an SSR render, compiles Tailwind against it, and
   // fetches every image — real CPU and bandwidth, so throttle per owner like
