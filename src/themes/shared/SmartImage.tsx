@@ -93,7 +93,7 @@ export function SmartImage({
       src={imageUrl(image, clampVariant("lg", cap), wm)}
       srcSet={imageSrcSet(image, cap, wm)}
       sizes={sizes}
-      alt={image.alt || image.caption || ""}
+      alt={image.alt || image.caption || "Photograph"}
       width={image.width ?? undefined}
       height={image.height ?? undefined}
       loading={priority ? "eager" : "lazy"}
