@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getProfileEntitlements, resolveTier } from "@/lib/entitlements";
 import { AccountSettings } from "@/components/settings/AccountSettings";
+import { TwoFactorSettings } from "@/components/settings/TwoFactorSettings";
 import type { Tier } from "@/types";
 
 export const metadata: Metadata = { title: "Account settings · Slanthour" };
@@ -67,6 +68,8 @@ export default async function AccountSettingsPage() {
           </p>
         )}
       </section>
+
+      <TwoFactorSettings />
 
       <AccountSettings email={user.email ?? ""} hasPasswordAuth={hasPasswordAuth} />
     </div>
