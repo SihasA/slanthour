@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { needsMfaChallenge } from "@/lib/auth/mfa";
 import Link from "next/link";
 
 interface AuthFormProps {
@@ -12,12 +13,20 @@ const inputClass =
   "w-full bg-transparent border border-rule rounded-none px-4 py-3 font-heading text-[15px] italic text-foreground placeholder:text-muted/40 focus:border-accent transition-colors";
 const labelClass = "text-[9px] uppercase tracking-label text-accent block mb-2";
 
+const RESEND_COOLDOWN_SECONDS = 30;
+
 export function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // View state: signup success and the login 2FA challenge swap the whole
+  // form out rather than routing away, so the entered email/password stay in
+  // scope for resend and challenge lookups.
+  const [signupDone, setSignupDone] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -43,14 +52,58 @@ export function AuthForm({ mode }: AuthFormProps) {
         options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
       });
       if (error) setError(error.message);
-      else setMessage("Check your email for a confirmation link.");
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
-      else window.location.href = "/dashboard";
+      else setSignupDone(true);
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
+    // Sign in
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // A verified 2FA factor turns this fresh session into aal1-needs-aal2.
+    // Complete the challenge before landing on the dashboard.
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && needsMfaChallenge(aal.currentLevel, aal.nextLevel)) {
+      const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
+      const totp = factors?.totp?.[0];
+      if (listError || !totp) {
+        setError(
+          listError?.message ??
+            "Two-factor is required on this account but no authenticator was found. Contact support."
+        );
+        setLoading(false);
+        return;
+      }
+      setMfaFactorId(totp.id);
+      setLoading(false);
+      return;
+    }
+
+    window.location.href = "/dashboard";
+  }
+
+  if (signupDone) {
+    return <ConfirmEmailView email={email} supabase={supabase} />;
+  }
+
+  if (mfaFactorId) {
+    return (
+      <MfaChallengeView
+        factorId={mfaFactorId}
+        supabase={supabase}
+        onCancel={async () => {
+          // Drop the half-authenticated session so the user starts clean.
+          await supabase.auth.signOut();
+          setMfaFactorId(null);
+          setPassword("");
+        }}
+      />
+    );
   }
 
   return (
@@ -189,6 +242,202 @@ export function AuthForm({ mode }: AuthFormProps) {
             </p>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── F2: post-signup "Confirm your email" view ──────────────────────────
+function ConfirmEmailView({
+  email,
+  supabase,
+}: {
+  email: string;
+  supabase: ReturnType<typeof createClient>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  async function handleResend() {
+    if (busy || cooldown > 0) return;
+    setBusy(true);
+    setStatus(null);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setBusy(false);
+    if (error) {
+      setStatus({ kind: "error", text: error.message });
+      return;
+    }
+    setStatus({ kind: "ok", text: "Sent. Give it a minute, then check your inbox." });
+    setCooldown(RESEND_COOLDOWN_SECONDS);
+    const timer = setInterval(() => {
+      setCooldown((s) => {
+        if (s <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="w-full max-w-sm text-center">
+        <Link href="/" className="mb-16 flex justify-center">
+          <img src="/brand/login-logo.svg" alt="Slanthour" className="h-20 w-auto" />
+        </Link>
+
+        <h1 className="font-heading text-3xl font-light italic text-foreground mb-2">
+          Confirm your email.
+        </h1>
+        <p className="font-copy text-sm text-muted mb-2">
+          We sent a confirmation link to{" "}
+          <span className="text-foreground">{email}</span>.
+        </p>
+        <p className="font-copy text-sm text-muted/70 mb-10">
+          Open your email app and tap the link to finish setting up your account. It can take a
+          minute to arrive, and it sometimes lands in spam.
+        </p>
+
+        <button
+          onClick={handleResend}
+          disabled={busy || cooldown > 0}
+          className="w-full py-3 text-[10px] uppercase tracking-wide text-background bg-foreground hover:bg-accent transition-colors duration-200 disabled:opacity-40 disabled:pointer-events-none"
+        >
+          {busy
+            ? "…"
+            : cooldown > 0
+              ? `Resend in ${cooldown}s`
+              : "Resend confirmation"}
+        </button>
+
+        {status && (
+          <p
+            className={`mt-4 text-[13px] font-heading italic ${status.kind === "ok" ? "text-accent" : "text-red-400"}`}
+            role={status.kind === "error" ? "alert" : "status"}
+          >
+            {status.text}
+          </p>
+        )}
+
+        <p className="font-copy text-sm text-muted/60 mt-8">
+          Already confirmed?{" "}
+          <Link
+            href="/login"
+            className="text-accent hover:text-foreground transition-colors underline underline-offset-2"
+          >
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── 2b: login 2FA challenge view ───────────────────────────────────────
+function MfaChallengeView({
+  factorId,
+  supabase,
+  onCancel,
+}: {
+  factorId: string;
+  supabase: ReturnType<typeof createClient>;
+  onCancel: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+      factorId,
+    });
+    if (challengeError || !challenge) {
+      setError(challengeError?.message ?? "Could not start the challenge. Try again.");
+      setLoading(false);
+      return;
+    }
+
+    const { error: verifyError } = await supabase.auth.mfa.verify({
+      factorId,
+      challengeId: challenge.id,
+      code,
+    });
+    if (verifyError) {
+      setError("That code didn't match. Check your authenticator and try again.");
+      setCode("");
+      setLoading(false);
+      return;
+    }
+
+    window.location.href = "/dashboard";
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="w-full max-w-sm">
+        <Link href="/" className="mb-16 flex justify-center">
+          <img src="/brand/login-logo.svg" alt="Slanthour" className="h-20 w-auto" />
+        </Link>
+
+        <h1 className="font-heading text-3xl font-light italic text-foreground mb-2 text-center">
+          Two-factor check.
+        </h1>
+        <p className="font-copy text-sm text-muted text-center mb-10">
+          Enter the 6-digit code from your authenticator app.
+        </p>
+
+        <form onSubmit={handleVerify} className="flex flex-col gap-5">
+          <div>
+            <label htmlFor="mfa-code" className={labelClass}>
+              Code
+            </label>
+            <input
+              id="mfa-code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="123456"
+              required
+              autoFocus
+              className={`${inputClass} tracking-[0.4em] text-center`}
+            />
+          </div>
+
+          {error && (
+            <p className="text-[13px] font-heading italic text-red-400" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || code.length !== 6}
+            className="w-full py-3 mt-2 text-[10px] uppercase tracking-wide text-background bg-foreground hover:bg-accent transition-colors duration-200 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {loading ? "…" : "Verify"}
+          </button>
+        </form>
+
+        <p className="font-copy text-sm text-muted/60 text-center mt-8">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-accent hover:text-foreground transition-colors underline underline-offset-2"
+          >
+            Cancel and sign in again
+          </button>
+        </p>
       </div>
     </div>
   );
