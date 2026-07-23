@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pageCacheTag, PUBLISHED_PAGE_REVALIDATE } from "./page-cache";
+import { pageCacheTag, profileCacheTag, PUBLISHED_PAGE_REVALIDATE } from "./page-cache";
 
 describe("pageCacheTag", () => {
   it("is stable for the same inputs", () => {
@@ -13,6 +13,21 @@ describe("pageCacheTag", () => {
 
   it("cannot collide across a literal separator inside a part", () => {
     expect(pageCacheTag("a", "b:c")).not.toBe(pageCacheTag("a:b", "c"));
+  });
+});
+
+describe("profileCacheTag", () => {
+  it("is stable for the same input", () => {
+    expect(profileCacheTag("alice")).toBe(profileCacheTag("alice"));
+  });
+
+  it("is distinct per username", () => {
+    expect(profileCacheTag("alice")).not.toBe(profileCacheTag("bob"));
+  });
+
+  it("cannot collide with a pageCacheTag-style key", () => {
+    expect(profileCacheTag("alice")).not.toBe(pageCacheTag("alice", "wedding"));
+    expect(profileCacheTag("a:b")).not.toBe(pageCacheTag("a", "b"));
   });
 });
 

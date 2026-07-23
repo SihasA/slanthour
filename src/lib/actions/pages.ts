@@ -10,7 +10,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { pageCacheTag } from "@/lib/page-cache";
+import { pageCacheTag, profileCacheTag } from "@/lib/page-cache";
 import {
   collectAssetIds,
   countImages,
@@ -90,6 +90,17 @@ function revalidatePublic(username: string | null, slug: string) {
     // updatePageSettings on a slug change) invalidate both addresses.
     revalidateTag(pageCacheTag(username, slug));
   }
+}
+
+/**
+ * The profile grid only ever shows PUBLISHED PUBLIC pages, so it only needs
+ * invalidating when a page that is (or was) public and published might have
+ * entered or left it, or its card link (slug) moved. Unlisted/password
+ * pages, and unpublished drafts, never appear there regardless of publish
+ * state — skip the tag write for those.
+ */
+function revalidateProfileGrid(username: string | null, isPublished: boolean, isPublic: boolean) {
+  if (username && isPublished && isPublic) revalidateTag(profileCacheTag(username));
 }
 
 /**
@@ -234,7 +245,10 @@ export async function deletePage(pageId: string): Promise<ActionResult> {
 
   if (candidateAssetIds.size > 0) await pruneOrphanedAssets(supabase, user.id, candidateAssetIds);
 
-  revalidatePublic(await ownerUsername(supabase, user.id), page.slug);
+  const username = await ownerUsername(supabase, user.id);
+  revalidatePublic(username, page.slug);
+  // A published public page leaves the grid when deleted.
+  revalidateProfileGrid(username, page.is_published, page.visibility === "public");
   return { ok: true };
 }
 
@@ -396,6 +410,17 @@ export async function updatePageSettings(
   const username = await ownerUsername(supabase, user.id);
   revalidatePublic(username, page.slug);
   if (updates.slug) revalidatePublic(username, updates.slug as string);
+  // The card link (slug) or grid membership (visibility) may have moved.
+  // Gate on the page actually being published, and either its old or new
+  // visibility being public, so an unpublished draft's settings — or a
+  // password-only rotation that touches neither field — never triggers a
+  // profile invalidation.
+  const nextVisibility = (updates.visibility ?? page.visibility) as Visibility;
+  const gridAffected =
+    page.is_published &&
+    (updates.slug !== undefined || updates.visibility !== undefined) &&
+    (page.visibility === "public" || nextVisibility === "public");
+  if (username && gridAffected) revalidateTag(profileCacheTag(username));
   return { ok: true, slug: (updates.slug as string) ?? page.slug };
 }
 
@@ -447,6 +472,9 @@ export async function publishPage(pageId: string): Promise<ActionResult<{ url: s
 
   const username = profile?.username ?? (await ownerUsername(supabase, user.id));
   revalidatePublic(username, page.slug);
+  // A public page enters the grid on publish; unlisted/password pages
+  // never appear there regardless of publish state.
+  revalidateProfileGrid(username, true, page.visibility === "public");
   return { ok: true, url: `/${username}/${page.slug}` };
 }
 
@@ -462,7 +490,10 @@ export async function unpublishPage(pageId: string): Promise<ActionResult> {
     .eq("user_id", user.id);
 
   if (error) return err("Could not unpublish.");
-  revalidatePublic(await ownerUsername(supabase, user.id), page.slug);
+  const username = await ownerUsername(supabase, user.id);
+  revalidatePublic(username, page.slug);
+  // A public page leaves the grid on unpublish.
+  revalidateProfileGrid(username, page.is_published, page.visibility === "public");
   return { ok: true };
 }
 

@@ -5,7 +5,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { validateUsername } from "@/lib/validation";
-import { pageCacheTag } from "@/lib/page-cache";
+import { pageCacheTag, profileCacheTag } from "@/lib/page-cache";
 import type { ActionResult } from "./pages";
 
 const DISPLAY_NAME_MAX = 60;
@@ -31,11 +31,12 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
 
   const { data: current } = await supabase
     .from("profiles")
-    .select("username, display_name")
+    .select("username, display_name, bio")
     .eq("id", user.id)
     .single();
   if (!current) return { ok: false, error: "Profile not found." };
   const displayNameChanged = display_name !== current.display_name;
+  const bioChanged = bio !== (current.bio ?? "");
 
   const updates: Record<string, unknown> = { display_name, bio, updated_at: new Date().toISOString() };
 
@@ -57,6 +58,11 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
 
   if (updates.username) {
     revalidatePath(`/${username}`);
+    // The profile itself moves to a new URL — invalidate both the old and
+    // new address, or the old one keeps serving a stale grid and the new
+    // one stays a 404-until-revalidate for up to an hour.
+    revalidateTag(profileCacheTag(current.username));
+    revalidateTag(profileCacheTag(username));
     // Every one of this user's page URLs moves with the username, so each
     // page's cache entry must be invalidated at both its old and new
     // address — a single revalidatePath("/[username]") does not reach the
@@ -69,13 +75,19 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
       revalidatePath(`/${current.username}/${slug}`);
       revalidatePath(`/${username}/${slug}`);
     }
-  } else if (displayNameChanged) {
-    // The display name is rendered on every published page (tab/OG title,
-    // author, footer) from the cached snapshot join, so a name-only change
-    // must invalidate each page's tag or the old name lingers up to an hour.
-    const { data: pages } = await supabase.from("pages").select("slug").eq("user_id", user.id);
-    for (const row of pages ?? []) {
-      revalidateTag(pageCacheTag(current.username, row.slug as string));
+  } else if (displayNameChanged || bioChanged) {
+    // The profile header (name/bio) is rendered from the cached profile
+    // read, so either change must invalidate the profile tag or the old
+    // header lingers up to an hour.
+    revalidateTag(profileCacheTag(current.username));
+    if (displayNameChanged) {
+      // The display name is also rendered on every published page (tab/OG
+      // title, author, footer) from the cached snapshot join, so a
+      // name change must invalidate each page's tag too.
+      const { data: pages } = await supabase.from("pages").select("slug").eq("user_id", user.id);
+      for (const row of pages ?? []) {
+        revalidateTag(pageCacheTag(current.username, row.slug as string));
+      }
     }
   }
 
@@ -93,6 +105,12 @@ export async function updateAvatar(avatarPath: string | null): Promise<ActionRes
   if (avatarPath !== null && !avatarPath.startsWith(`${user.id}/`))
     return { ok: false, error: "Invalid avatar path." };
 
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
   const { error } = await supabase
     .from("profiles")
     .update({ avatar_url: avatarPath, updated_at: new Date().toISOString() })
@@ -100,5 +118,7 @@ export async function updateAvatar(avatarPath: string | null): Promise<ActionRes
   if (error) return { ok: false, error: "Could not update your photo." };
 
   revalidatePath("/dashboard");
+  // The avatar renders in the profile header from the cached profile read.
+  if (current?.username) revalidateTag(profileCacheTag(current.username));
   return { ok: true };
 }
