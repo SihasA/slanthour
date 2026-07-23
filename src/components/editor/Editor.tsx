@@ -14,7 +14,8 @@ import {
   initialEditorState,
   type EditorContent,
 } from "@/lib/editor/reducer";
-import { countImages, displaySettings } from "@/lib/page-document";
+import { countImages, displaySettings, firstImage } from "@/lib/page-document";
+import { imageUrl } from "@/lib/media";
 import { savePageDraft, publishPage, unpublishPage } from "@/lib/actions/pages";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { resolveWatermarkLabel } from "@/lib/watermark";
@@ -26,6 +27,8 @@ import { SectionInspector } from "./SectionInspector";
 import { ThemePanel } from "./ThemePanel";
 import { PagePanel } from "./PagePanel";
 import { ImageDragProvider } from "./ImageDrag";
+import { PublishCelebration } from "./PublishCelebration";
+import type { Visibility } from "@/types";
 
 type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 type PanelId = "inspect" | "theme" | "page";
@@ -54,6 +57,14 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [publishState, setPublishState] = useState<{ busy: boolean; message: string | null; url: string | null }>({ busy: false, message: null, url: null });
   const [isPublished, setIsPublished] = useState(page.is_published);
+  // The celebration overlay shown on a successful publish (the emotional
+  // peak + share sheet). Null when hidden.
+  const [celebration, setCelebration] = useState<{
+    url: string;
+    title: string;
+    visibility: Visibility;
+    coverUrl: string | null;
+  } | null>(null);
 
   // Refs so the debounced save always sees the latest content/revision.
   const revRef = useRef(page.draft_rev);
@@ -159,7 +170,18 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
     const result = await publishPage(page.id);
     if (result.ok) {
       setIsPublished(true);
-      setPublishState({ busy: false, message: "Published", url: result.url });
+      setPublishState({ busy: false, message: null, url: null });
+      // result.url is the canonical path (/username/slug). Pair it with the
+      // current origin for a shareable absolute link, and take the cover from
+      // the just-frozen document's first image for the unfurl preview.
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://slanthour.com";
+      const cover = firstImage(contentRef.current.document);
+      setCelebration({
+        url: `${origin}${result.url}`,
+        title: contentRef.current.title,
+        visibility: page.visibility,
+        coverUrl: cover ? imageUrl(cover, "md") : null,
+      });
     } else {
       setPublishState({ busy: false, message: result.error, url: null });
       setPanel("page");
@@ -330,6 +352,17 @@ export function Editor({ page, profile }: { page: Page; profile: Profile }) {
           {publishState.busy ? "…" : isPublished ? "Republish" : "Publish"}
         </button>
       </header>
+
+      {/* Publish celebration + share sheet (shown on a successful publish). */}
+      {celebration && (
+        <PublishCelebration
+          url={celebration.url}
+          title={celebration.title}
+          visibility={celebration.visibility}
+          coverUrl={celebration.coverUrl}
+          onClose={() => setCelebration(null)}
+        />
+      )}
 
       {/* Publish / conflict banners */}
       {publishState.message && (
