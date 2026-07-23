@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { MEDIA_BUCKET } from "@/lib/constants";
 import {
   checkBlurDataUrl,
@@ -32,6 +33,8 @@ export async function GET(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  if (await isMfaChallengePending(supabase))
+    return NextResponse.json({ error: MFA_PENDING_MESSAGE }, { status: 403 });
 
   // Keyset cursor over the full sort key (created_at, id). Keying on
   // created_at alone drops rows once more than a page share one timestamp
@@ -86,6 +89,8 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  if (await isMfaChallengePending(supabase))
+    return NextResponse.json({ error: MFA_PENDING_MESSAGE }, { status: 403 });
 
   const limited = rateLimit("media-upload", user.id, 60, 60);
   if (!limited.allowed) {

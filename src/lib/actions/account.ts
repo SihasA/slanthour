@@ -4,6 +4,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { MEDIA_BUCKET } from "@/lib/constants";
 import type { ActionResult } from "./pages";
 
@@ -18,6 +19,9 @@ export async function deleteAccount(confirmation: string): Promise<ActionResult>
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Your session has expired. Sign in again." };
+  // Block destructive account deletion for a session that has not cleared its
+  // 2FA challenge, before any storage or auth records are removed.
+  if (await isMfaChallengePending(supabase)) return { ok: false, error: MFA_PENDING_MESSAGE };
   if (confirmation !== "delete my account")
     return { ok: false, error: "Type the confirmation phrase exactly." };
 

@@ -4,6 +4,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { validateUsername } from "@/lib/validation";
 import { normalizeWebsiteUrl, normalizeInstagramHandle, normalizeEmail } from "@/lib/links";
 import { pageCacheTag, profileCacheTag } from "@/lib/page-cache";
@@ -29,6 +30,7 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Your session has expired. Sign in again." };
+  if (await isMfaChallengePending(supabase)) return { ok: false, error: MFA_PENDING_MESSAGE };
 
   const display_name = input.display_name.trim().slice(0, DISPLAY_NAME_MAX);
   if (!display_name) return { ok: false, error: "A display name is required." };
@@ -135,6 +137,7 @@ export async function updateAvatar(avatarPath: string | null): Promise<ActionRes
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Your session has expired. Sign in again." };
+  if (await isMfaChallengePending(supabase)) return { ok: false, error: MFA_PENDING_MESSAGE };
 
   // Only accept paths inside the caller's own storage folder.
   if (avatarPath !== null && !avatarPath.startsWith(`${user.id}/`))

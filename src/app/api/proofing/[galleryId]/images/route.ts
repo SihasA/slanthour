@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { MEDIA_BUCKET } from "@/lib/constants";
 import { checkDimensions, checkUploadedImage, safeFilename } from "@/lib/media-validation";
 import { PROOFING_MAX_IMAGES } from "@/lib/proofing";
@@ -26,6 +27,8 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  if (await isMfaChallengePending(supabase))
+    return NextResponse.json({ error: MFA_PENDING_MESSAGE }, { status: 403 });
 
   // Proofing shoots are large; the per-photo work is light (two small
   // variants), so the window is wider than page uploads.

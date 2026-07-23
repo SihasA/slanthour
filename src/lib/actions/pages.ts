@@ -10,6 +10,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { pageCacheTag, profileCacheTag } from "@/lib/page-cache";
 import {
   collectAssetIds,
@@ -50,12 +51,17 @@ const err = (error: string, conflict = false): ActionError => ({ ok: false, erro
 
 // ─── Shared guards ───────────────────────────────────────────────────
 
-async function requireUser() {
+async function requireUser(): Promise<
+  { supabase: Awaited<ReturnType<typeof createClient>>; user: { id: string } } | ActionError
+> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return err("Your session has expired. Sign in again.");
+  // A session at aal1 with a verified factor has not cleared its 2FA
+  // challenge, so reject data access here, not just at page navigation.
+  if (await isMfaChallengePending(supabase)) return err(MFA_PENDING_MESSAGE);
   return { supabase, user };
 }
 
@@ -68,7 +74,7 @@ type PageGuard = {
 /** Returns the guard context, or an ActionError (detectable via "ok" in result). */
 async function requirePage(pageId: string): Promise<PageGuard | ActionError> {
   const ctx = await requireUser();
-  if (!ctx) return err("Your session has expired. Sign in again.");
+  if ("error" in ctx) return ctx;
   const { data } = await ctx.supabase.from("pages").select("*").eq("id", pageId).single();
   const page = data as Page | null;
   // RLS already scopes reads, but ownership is asserted explicitly as well.
@@ -147,7 +153,7 @@ export async function createPage(
   templateId?: string
 ): Promise<ActionResult<{ pageId: string }>> {
   const ctx = await requireUser();
-  if (!ctx) return err("Your session has expired. Sign in again.");
+  if ("error" in ctx) return ctx;
   const { supabase, user } = ctx;
 
   const { data: profile } = await supabase
@@ -533,7 +539,7 @@ export async function checkSlugAvailable(
  */
 export async function startFromExample(): Promise<ActionResult<{ pageId: string }>> {
   const ctx = await requireUser();
-  if (!ctx) return err("Your session has expired. Sign in again.");
+  if ("error" in ctx) return ctx;
   const { supabase, user } = ctx;
 
   const { data: profile } = await supabase

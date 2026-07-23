@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isMfaChallengePending, MFA_PENDING_MESSAGE } from "@/lib/auth/mfa-server";
 import { MEDIA_BUCKET } from "@/lib/constants";
 import { getProfileEntitlements } from "@/lib/entitlements";
 import { hashPagePassword, verifyPagePassword } from "@/lib/page-password";
@@ -28,12 +29,17 @@ const err = (error: string): ActionError => ({ ok: false, error });
 
 // ─── Shared guards ───────────────────────────────────────────────────
 
-async function requireUser() {
+async function requireUser(): Promise<
+  { supabase: Awaited<ReturnType<typeof createClient>>; user: { id: string } } | ActionError
+> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return err("Your session has expired. Sign in again.");
+  // Reject a session that has not cleared its 2FA challenge (aal1 with a
+  // verified factor), matching the enforcement in pages.ts.
+  if (await isMfaChallengePending(supabase)) return err(MFA_PENDING_MESSAGE);
   return { supabase, user };
 }
 
@@ -45,7 +51,7 @@ type GalleryGuard = {
 
 async function requireGallery(galleryId: string): Promise<GalleryGuard | ActionError> {
   const ctx = await requireUser();
-  if (!ctx) return err("Your session has expired. Sign in again.");
+  if ("error" in ctx) return ctx;
   const { data } = await ctx.supabase
     .from("proofing_galleries")
     .select("*")
@@ -78,7 +84,7 @@ export async function createProofingGallery(
   rawTitle: string
 ): Promise<ActionResult<{ galleryId: string }>> {
   const ctx = await requireUser();
-  if (!ctx) return err("Your session has expired. Sign in again.");
+  if ("error" in ctx) return ctx;
 
   const title = cleanTitle(rawTitle);
   if (!title) return err("Give the gallery a name.");
@@ -215,7 +221,7 @@ export async function deleteProofingGallery(galleryId: string): Promise<ActionRe
 
 export async function removeProofingImage(imageId: string): Promise<ActionResult> {
   const ctx = await requireUser();
-  if (!ctx) return err("Your session has expired. Sign in again.");
+  if ("error" in ctx) return ctx;
   const { data } = await ctx.supabase
     .from("proofing_images")
     .select("id, user_id, gallery_id, storage_path")
