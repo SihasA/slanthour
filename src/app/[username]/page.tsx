@@ -19,6 +19,7 @@ import { unstable_cache } from "next/cache";
 import type { Metadata } from "next";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { storageUrl } from "@/lib/media";
+import { safeExternalUrl, instagramUrl, mailtoHref } from "@/lib/links";
 import { getTheme } from "@/themes/registry";
 import { profileCacheTag, PUBLISHED_PAGE_REVALIDATE } from "@/lib/page-cache";
 import type { PublishedSnapshot } from "@/lib/page-document";
@@ -90,6 +91,14 @@ export default async function ProfilePage({ params }: RouteProps) {
   if (!loaded) notFound();
   const { profile: p, cards } = loaded;
 
+  // Opt-in contact links. Each href is (re)built through the safe builder,
+  // so a hostile stored value can never render as a live href. Only fields
+  // the owner actually set produce a link.
+  const website = safeExternalUrl(p.website_url);
+  const instagram = instagramUrl(p.instagram_handle);
+  const email = mailtoHref(p.email_public);
+  const hasContact = Boolean(website || instagram || email);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
@@ -109,6 +118,38 @@ export default async function ProfilePage({ params }: RouteProps) {
             <p className="mt-6 font-copy text-[15px] leading-relaxed text-muted max-w-xl mx-auto">
               {p.bio}
             </p>
+          )}
+          {hasContact && (
+            <nav
+              aria-label="Contact"
+              className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[10px] uppercase tracking-label"
+            >
+              {website && (
+                <a
+                  href={website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted hover:text-accent transition-colors"
+                >
+                  Website
+                </a>
+              )}
+              {instagram && (
+                <a
+                  href={instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted hover:text-accent transition-colors"
+                >
+                  Instagram
+                </a>
+              )}
+              {email && (
+                <a href={email} className="text-muted hover:text-accent transition-colors">
+                  Email
+                </a>
+              )}
+            </nav>
           )}
         </header>
 
