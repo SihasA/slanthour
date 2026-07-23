@@ -6,7 +6,11 @@ import { RESERVED_SLUGS } from "@/lib/constants";
 export const SLUG_MAX_LENGTH = 60;
 export const USERNAME_MAX_LENGTH = 30;
 export const PAGE_TITLE_MAX_LENGTH = 120;
-export const PAGE_PASSWORD_MIN_LENGTH = 4;
+// Protected pages and proofing galleries are guarded only by this password,
+// and the rate limiter is in-memory per serverless instance (softer than it
+// looks under concurrency), so a 4-character minimum was realistically
+// brute-forceable. Eight is the floor for a shared link secret.
+export const PAGE_PASSWORD_MIN_LENGTH = 8;
 export const PAGE_PASSWORD_MAX_LENGTH = 72;
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;

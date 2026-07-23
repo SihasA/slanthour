@@ -38,8 +38,22 @@ export async function GET(request: Request) {
   // (bulk backfills and concurrent multi-select uploads make that real):
   // the next page's `created_at <` excludes the whole timestamp group, not
   // just the rows already returned. Encode both parts as "created_at|id".
-  const cursor = new URL(request.url).searchParams.get("cursor");
-  const [cursorCreatedAt, cursorId] = cursor ? cursor.split("|") : [];
+  // The cursor is echoed straight back from a prior response, but it is a
+  // client value interpolated into the PostgREST filter below, so validate
+  // its shape before trusting it. The query is already RLS-scoped and
+  // .eq(user_id), so a bad cursor can never cross users; this keeps a
+  // malformed value from throwing a 500 and closes the interpolation off
+  // entirely. Expected form: "<ISO timestamp>|<uuid>".
+  const rawCursor = new URL(request.url).searchParams.get("cursor");
+  const cursorParts = rawCursor ? rawCursor.split("|") : [];
+  const CURSOR_TS = /^\d{4}-\d{2}-\d{2}T[\d:.]+(?:[+-]\d{2}:\d{2}|Z)?$/;
+  const CURSOR_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const [cursorCreatedAt, cursorId] =
+    cursorParts.length === 2 &&
+    CURSOR_TS.test(cursorParts[0]) &&
+    CURSOR_UUID.test(cursorParts[1])
+      ? cursorParts
+      : [];
 
   let query = supabase
     .from("media_assets")
