@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { needsMfaChallenge } from "@/lib/auth/mfa";
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -59,8 +60,32 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Signed-in users skip the auth pages
-  if (user && ["/login", "/signup", "/forgot-password"].includes(path)) {
+  // A signed-in user with a verified second factor whose session is still at
+  // aal1 has not completed their 2FA challenge. Check assurance once, so we
+  // can both block protected routes and keep /login reachable for them.
+  let pendingMfaChallenge = false;
+  if (user) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    pendingMfaChallenge = !!aal && needsMfaChallenge(aal.currentLevel, aal.nextLevel);
+  }
+
+  // 2FA enforcement: don't let direct navigation reach protected app routes
+  // before the challenge is cleared. Send them to /login, where the AuthForm
+  // challenge completes. /login stays reachable below, so this can't loop.
+  if (user && isProtected && pendingMfaChallenge) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  // Signed-in users skip the auth pages, but a user still owing a 2FA
+  // challenge MUST be able to reach /login to complete it, so exempt them.
+  if (
+    user &&
+    !pendingMfaChallenge &&
+    ["/login", "/signup", "/forgot-password"].includes(path)
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";
