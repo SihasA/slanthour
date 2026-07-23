@@ -35,6 +35,19 @@ export const MEDIA_WATERMARK = {
   maxChars: 40,
 } as const;
 
+// ─── Keepsake archive export ─────────────────────────────────
+// The static archive route (src/app/api/keepsake/[pageId]/archive/route.ts)
+// runs on a 60s route budget (maxDuration) while fetching every photo at
+// IMAGE_FETCH_CONCURRENCY = 6 and streaming a hand-rolled zip whose
+// end-of-central-directory trailer is only written once every image has
+// arrived. A platform timeout mid-stream kills the response before that
+// trailer is written, leaving a zip an unzip tool reports as corrupt, with
+// no explanation for the buyer. Studio, the top tier, caps a page at 500
+// images (see maxImagesPerPage in entitlements.ts); 300 comfortably clears
+// 6-way concurrent fetches within 60s while still leaving real headroom
+// under that cap, so it guards the extreme case without limiting normal use.
+export const KEEPSAKE_ARCHIVE_MAX_IMAGES = 300;
+
 // ─── Reserved slugs ─────────────────────────────────────────
 // Blocked as usernames AND page slugs — they collide with (or could be
 // confused with) application routes.
