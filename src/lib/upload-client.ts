@@ -14,7 +14,21 @@ export interface UploadResult {
   error?: string;
 }
 
+// iPhones shoot HEIC/HEIF by default, so it is by far the most common
+// rejected format for our audience. Browsers can't reliably decode it (and
+// often send an empty file.type for it), so we can't accept it yet, but we
+// can name it and tell the photographer exactly how to get past it instead
+// of the generic "unsupported format" dead-end.
+function isHeic(file: File): boolean {
+  const type = file.type.toLowerCase();
+  if (type === "image/heic" || type === "image/heif") return true;
+  return /\.hei[cf]$/i.test(file.name);
+}
+
 export function validateFileLocally(file: File): string | null {
+  if (isHeic(file)) {
+    return `“${file.name}” looks like an iPhone HEIC photo, which isn't supported yet. Export or share it as JPEG first, or set iOS Camera to “Most Compatible” (Settings › Camera › Formats).`;
+  }
   if (!PHOTO_ACCEPTED_TYPES.includes(file.type)) {
     return `“${file.name}” isn't a supported format. Use JPEG, PNG or WebP.`;
   }
