@@ -30,14 +30,22 @@ const loadProfile = cache(async (username: string) => {
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*, pages(id, slug, theme, published, published_at)")
+    // Explicit public columns only: the anon role is barred from the billing
+    // columns (tier, tier_expires_at, username_changed_at), so a `*` select
+    // would fail for logged-out visitors. Keep this list in sync with the
+    // columns granted to anon in the restrict_profiles_columns migration.
+    .select(
+      "id, username, display_name, bio, email_public, instagram_handle, website_url, avatar_url, created_at, updated_at, pages(id, slug, theme, published, published_at)"
+    )
     .eq("username", username)
     .eq("pages.is_published", true)
     .eq("pages.visibility", "public")
     .order("published_at", { referencedTable: "pages", ascending: false })
     .single();
   if (!profile) return null;
-  const { pages, ...rest } = profile as Profile & { pages: PageRow[] };
+  // The select omits the billing columns (anon has no grant on them), so the
+  // row is a public subset of Profile; the fields used below are all present.
+  const { pages, ...rest } = profile as unknown as Profile & { pages: PageRow[] };
   const cards: PageCard[] = (pages ?? []).map((p) => ({
     id: p.id,
     slug: p.slug,

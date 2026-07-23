@@ -48,8 +48,8 @@ describe("validateUsername", () => {
 
 describe("validatePagePassword", () => {
   it("enforces bounds", () => {
-    expect(validatePagePassword("abc").ok).toBe(false);
-    expect(validatePagePassword("abcd").ok).toBe(true);
+    expect(validatePagePassword("abcd").ok).toBe(false);
+    expect(validatePagePassword("abcdefgh").ok).toBe(true);
     expect(validatePagePassword("x".repeat(73)).ok).toBe(false);
   });
 });
